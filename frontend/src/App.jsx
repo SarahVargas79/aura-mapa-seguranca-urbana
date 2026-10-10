@@ -1,122 +1,72 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import MapComponent from './components/MapComponent';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [selectedRegion, setSelectedRegion] = useState(null);
+  const [highContrast, setHighContrast] = useState(false);
+  const [fontSizeLarge, setFontSizeLarge] = useState(false);
+
+  // Função de Saída Rápida exigida no escopo
+  const handleQuickExit = () => {
+    window.location.replace('https://www.google.com');
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className={`app-container ${highContrast ? 'high-contrast' : ''} ${fontSizeLarge ? 'font-large' : ''}`}>
+      {/* Cabeçalho */}
+      <header className="app-header">
+        <div className="logo-area">
+          <h1>AURA</h1>
+          <p>Mapa de Segurança Urbana para Mulheres — Porto Alegre</p>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="accessibility-controls">
+          <button onClick={() => setHighContrast(!highContrast)} title="Alternar Alto Contraste">
+            Contraste
+          </button>
+          <button onClick={() => setFontSizeLarge(!fontSizeLarge)} title="Aumentar Fonte">
+            A+
+          </button>
+          <button onClick={handleQuickExit} className="btn-quick-exit" title="Sai rapidamente da página">
+            Saída Rápida
+          </button>
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      {/* Conteúdo Principal */}
+      <main className="main-content">
+        <section className="intro-section">
+          <h2>Consulte a segurança do seu trajeto</h2>
+          <p>Selecione uma região no mapa para verificar o nível de atenção e os fatores relatados pela comunidade.</p>
+        </section>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        <div className="dashboard-grid">
+          <div className="map-wrapper">
+            <MapComponent onSelectRegion={setSelectedRegion} />
+          </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          <div className="details-panel">
+            <h3>Painel de Informações da Região</h3>
+            {selectedRegion ? (
+              <div className="region-card">
+                <h4>{selectedRegion.nome}</h4>
+                <p><strong>Nível de Atenção:</strong> <span className={`badge ${selectedRegion.nivel.toLowerCase()}`}>{selectedRegion.nivel}</span></p>
+                <p><strong>Fatores Identificados:</strong> {selectedRegion.desc}</p>
+                <div className="action-hint">
+                  <p><em>Esta classificação é um indicador colaborativo do projeto e não substitui os dados oficiais de segurança.</em></p>
+                </div>
+              </div>
+            ) : (
+              <p className="placeholder-text">Clique em um marcador no mapa de Porto Alegre para visualizar os detalhes e fatores da área.</p>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Rodapé */}
+      <footer className="app-footer">
+        <p>Projeto Acadêmico ADS | UniSenac Centro Universitário – RS</p>
+      </footer>
+    </div>
+  );
 }
-
-export default App
