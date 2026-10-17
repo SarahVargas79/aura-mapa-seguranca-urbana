@@ -1,0 +1,23 @@
+:root {
+  /* Sobrescrevendo as cores principais do Bootstrap */
+  --bs-primary: #0a2e6b;
+  --bs-primary-rgb: 10, 46, 107;
+  --bs-secondary: #4f46e5;
+  --bs-secondary-rgb: 79, 70, 229;
+
+  /* Configuração Global de Fundo e Texto (Bootstrap) */
+  --bs-body-bg: #f8fafc;
+  --bs-body-color: #1e293b;
+  --bs-body-font-family:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Cores Semânticas Exclusivas do Projeto AURA (Níveis do Mapa) */
+  --aura-attention-text: #ca8a04;
+  --aura-attention-bg: #fef9c3;
+
+  --aura-alert-text: #c2410c;
+  --aura-alert-bg: #ffedd5;
+
+  --aura-danger-text: #b91c1c;
+  --aura-danger-bg: #fee2e2;
+}

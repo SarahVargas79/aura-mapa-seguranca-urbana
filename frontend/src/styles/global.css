@@ -1,0 +1,29 @@
+@import "./_variables.css";
+
+/* Suavização de fontes nativa */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 
+  Modo de Alto Contraste (Acessibilidade)
+  Inclusive no Bootstrap.
+*/
+body.high-contrast {
+  --bs-body-bg: #000000;
+  --bs-body-color: #ffffff;
+  --bs-primary: #000000;
+  --bs-secondary: #ffffff;
+}
+
+body.high-contrast * {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+/* Aumento de Fonte Geral */
+body.font-large {
+  font-size: 1.25rem !important;
+}
