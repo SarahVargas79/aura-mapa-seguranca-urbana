@@ -1,23 +1,154 @@
 :root {
-  /* Sobrescrevendo as cores principais do Bootstrap */
-  --bs-primary: #0a2e6b;
-  --bs-primary-rgb: 10, 46, 107;
-  --bs-secondary: #4f46e5;
-  --bs-secondary-rgb: 79, 70, 229;
+  color-scheme: light;
+  --navy: #102f61;
+  --navy-deep: #0b2349;
+  --blue: #164e91;
+  --blue-hover: #104681;
+  --blue-soft: #eaf2ff;
+  --purple: #6542a6;
+  --purple-hover: #53358d;
+  --purple-soft: #f0eaff;
+  --ink: #172b46;
+  --muted: #52657d;
+  --canvas: #f4f7fb;
+  --surface: #ffffff;
+  --surface-2: #edf3fa;
+  --line: #d5dfeb;
 
-  /* Configuração Global de Fundo e Texto (Bootstrap) */
-  --bs-body-bg: #f8fafc;
-  --bs-body-color: #1e293b;
-  --bs-body-font-family:
-    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Bordas de Campos e Botões Secundários */
+  --field-border: #aabbd0;
+  --field-border-hover: #7e9bc0;
+  --secondary-border: #b9cbe0;
+  --secondary-border-hover: #8eafd8;
 
-  /* Cores Semânticas Exclusivas do Projeto AURA (Níveis do Mapa) */
-  --aura-attention-text: #ca8a04;
-  --aura-attention-bg: #fef9c3;
+  /* Estados Semânticos Padronizados */
+  --green: #146c43;
+  --green-bg: #e8f8f0;
+  --green-border: #a3cfbb;
 
-  --aura-alert-text: #c2410c;
-  --aura-alert-bg: #ffedd5;
+  --yellow: #805b00;
+  --yellow-bg: #fff6d6;
+  --yellow-border: #e6ca78;
 
-  --aura-danger-text: #b91c1c;
-  --aura-danger-bg: #fee2e2;
+  --orange: #9b4d14;
+  --orange-bg: #fff0e2;
+  --orange-border: #e7b18c;
+
+  --red: #c43c4f;
+  --red-bg: #fff0f2;
+  --red-border: #e6a2ad;
+
+  --gray: #4a5a6a;
+  --gray-bg: #eef2f6;
+  --gray-border: #cbd5e1;
+
+  --info: #164e91;
+  --info-bg: #eaf2ff;
+  --info-border: #b9cbe0;
+
+  /* Cores de Componentes e Formulários (Padrão Único de Azul no Modo Claro) */
+  --emergency: #d43b52;
+  --emergency-hover: #c63449;
+  --title-blue: #164e91;
+  --subtitle-info: #164e91;
+  --eyebrow-map: #164e91;
+  --form-title: #164e91;
+  --field-label: #164e91;
+  --form-subtitle: #52657d;
+  --form-desc: #52657d;
+
+  --button-primary: #164e91;
+  --button-primary-hover: #104681;
+  --button-text: #ffffff;
+  --focus: #ffbf47;
+  --title-purple: #6542a6;
+  --title-teal: #126e68;
+  --title-red: #cc3147;
+
+  /* Valores dos fatores semânticos */
+  --factor-check: #164e91;
+  --factor-variable: #164e91;
+  --factor-demo: #4a5a6a;
+  --factor-low: #146c43;
+
+  --shadow: 0 12px 34px rgba(28, 55, 90, 0.08);
+  --radius: 18px;
+  --scale: 1;
+  --danger-region-text: #c43c4f;
+}
+
+body.dark {
+  color-scheme: dark;
+  --navy: #071326;
+  --navy-deep: #040c18;
+  --blue: #8ab4f8;
+  --blue-hover: #b0d2ff;
+  --blue-soft: #1b3454;
+  --purple: #c6adff;
+  --purple-hover: #d5c4ff;
+  --purple-soft: #302347;
+  --ink: #f1f5fb;
+  --muted: #c1ccda;
+  --canvas: #0b1524;
+  --surface: #142238;
+  --surface-2: #1c2e46;
+  --line: #33445a;
+
+  /* Bordas de Campos e Botões Secundários (Simétricas ao Modo Claro) */
+  --field-border: #475970;
+  --field-border-hover: #647d9c;
+  --secondary-border: #385d8a;
+  --secondary-border-hover: #5d86b9;
+
+  /* Estados Semânticos Escuros */
+  --green: #9ce5bf;
+  --green-bg: #173d31;
+  --green-border: #2b6b55;
+
+  --yellow: #ffe69a;
+  --yellow-bg: #3a3019;
+  --yellow-border: #71602f;
+
+  --orange: #ffc19a;
+  --orange-bg: #41291e;
+  --orange-border: #805039;
+
+  --red: #ff9eaa;
+  --red-bg: #3b2027;
+  --red-border: #85404d;
+
+  --gray: #cbd5e1;
+  --gray-bg: #223042;
+  --gray-border: #475970;
+
+  --info: #8ab4f8;
+  --info-bg: #1b3454;
+  --info-border: #385d8a;
+
+  --emergency: #c44357;
+  --emergency-hover: #ad3548;
+  --button-primary: #285f9d;
+  --button-primary-hover: #3478bd;
+  --button-text: #ffffff;
+
+  /* Padronização Rigorosa no Modo Escuro (Mesmo tom #8ab4f8 para todos os equivalentes) */
+  --title-blue: #8ab4f8;
+  --subtitle-info: #8ab4f8;
+  --eyebrow-map: #8ab4f8;
+  --form-title: #8ab4f8;
+  --field-label: #8ab4f8;
+  --form-subtitle: #c1ccda;
+  --form-desc: #c1ccda;
+
+  --title-purple: #c6adff;
+  --title-teal: #64e6d7;
+  --title-red: #ff9eaa;
+
+  --factor-check: #8ab4f8;
+  --factor-variable: #8ab4f8;
+  --factor-demo: #cbd5e1;
+  --factor-low: #9ce5bf;
+
+  --danger-region-text: #ff9eaa;
+  --shadow: 0 10px 28px #0003;
 }
