@@ -25,9 +25,7 @@ function createAuraPinIcon(region, isSelected) {
       <div class="aura-pin-wrapper ${isSelected ? 'selected' : ''}" role="presentation">
         <span class="aura-pin-halo-outer" style="background: ${region.color};"></span>
         <span class="aura-pin-halo-inner" style="background: ${region.color};"></span>
-        <span class="aura-pin-core" style="background: ${region.color};">
-          <span class="aura-pin-dot"></span>
-        </span>
+        <span class="aura-pin-core" style="background: ${region.color};"></span>
         <span class="aura-pin-tag">${region.name}</span>
       </div>
     `

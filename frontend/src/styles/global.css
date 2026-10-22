@@ -238,7 +238,7 @@ p { margin: 0 0 12px; }
 .maplegend strong { color: var(--title-blue); }
 .legendrow { display: flex; align-items: center; gap: 8px; }
 .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.swatch.low { background: #146c43; } .swatch.attention { background: #d1a738; } .swatch.alert { background: #cf8534; } .swatch.danger { background: #cc4759; } .swatch.insufficient { background: #64748b; }
+.swatch.low { background: #146c43; } .swatch.attention { background: #eab308; } .swatch.alert { background: #ea6418; } .swatch.danger { background: #cc4759; } .swatch.insufficient { background: #64748b; }
 .map-note { position: absolute; right: 10px; bottom: 22px; z-index: 10; max-width: 245px; background: rgba(255, 255, 255, 0.94); border: 1px solid var(--line); border-radius: 9px; padding: 8px 10px; color: var(--muted); font-size: 0.72rem; line-height: 1.4; pointer-events: none; backdrop-filter: blur(4px); }
 .map-foot { display: flex; justify-content: space-between; gap: 12px; padding: 0 4px; color: var(--muted); font-size: 0.77rem; margin-top: 10px; }
 .map-foot strong { color: var(--ink); }
@@ -257,10 +257,9 @@ p { margin: 0 0 12px; }
 .aura-pin-wrapper { position: relative; width: 76px; height: 76px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .aura-pin-halo-outer { position: absolute; width: 68px; height: 68px; border-radius: 50%; opacity: 0.18; transition: transform 0.2s ease, opacity 0.2s ease; }
 .aura-pin-halo-inner { position: absolute; width: 44px; height: 44px; border-radius: 50%; opacity: 0.28; transition: transform 0.2s ease, opacity 0.2s ease; }
-.aura-pin-core { position: relative; width: 22px; height: 22px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, border-width 0.15s ease; }
-.aura-pin-dot { width: 7px; height: 7px; border-radius: 50%; background: #ffffff; }
+.aura-pin-core { position: relative; width: 20px; height: 20px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease, border-width 0.15s ease; }
 .aura-pin-wrapper.selected .aura-pin-halo-outer, .aura-pin-wrapper:hover .aura-pin-halo-outer { opacity: 0.42; transform: scale(1.08); }
-.aura-pin-wrapper.selected .aura-pin-core, .aura-pin-wrapper:hover .aura-pin-core { border-width: 4px; transform: scale(1.08); }
+.aura-pin-wrapper.selected .aura-pin-core, .aura-pin-wrapper:hover .aura-pin-core { border-width: 3.5px; transform: scale(1.08); }
 .aura-pin-tag { position: absolute; left: 48px; top: 10px; white-space: nowrap; font-size: 0.76rem; font-weight: 850; color: #172b46; background: rgba(255, 255, 255, 0.92); padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(21, 45, 78, 0.14); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); pointer-events: none; }
 
 /* Coluna Direita e Detalhes da Região */
@@ -274,7 +273,7 @@ p { margin: 0 0 12px; }
 .level.red { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
 .level.gray { background: var(--gray-bg); color: var(--gray); border-color: var(--gray-border); }
 .leveldot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.level.green .leveldot { background: #146c43; } .level.yellow .leveldot { background: #d1a738; } .level.orange .leveldot { background: #cf8534; } .level.red .leveldot { background: #cc4759; } .level.gray .leveldot { background: #64748b; }
+.level.green .leveldot { background: #146c43; } .level.yellow .leveldot { background: #eab308; } .level.orange .leveldot { background: #ea6418; } .level.red .leveldot { background: #cc4759; } .level.gray .leveldot { background: #64748b; }
 .level strong { display: block; }
 .level .levelsub { font-size: 0.8rem; margin-top: 2px; }
 .region-copy { font-size: 0.88rem; color: var(--muted); margin: 0 0 12px; }
@@ -312,7 +311,7 @@ p { margin: 0 0 12px; }
 .quick-icon { display: grid; place-items: center; flex: 0 0 38px; width: 38px; height: 38px; border-radius: 11px; background: var(--blue-soft); color: var(--title-blue); }
 .quick-icon svg { width: 19px; height: 19px; }
 
-/* Refinamento da cor lilás (Escuta Lilás) */
+/* Painel de Comunidade */
 .quick-icon.purple-icon { background: var(--purple-soft); color: var(--title-purple); }
 .quick-card .purple-title { color: var(--title-purple) !important; }
 
@@ -459,7 +458,6 @@ body.dark .logo { box-shadow: 0 5px 15px #0006; }
 body.dark .modal { border-color: var(--line); }
 body.dark .cs-menu { box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45); }
 
-/* Respeito à preferência de movimento reduzido (WCAG 2.2) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

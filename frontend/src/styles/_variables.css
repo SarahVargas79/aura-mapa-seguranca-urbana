@@ -26,13 +26,13 @@
   --green-bg: #e8f8f0;
   --green-border: #a3cfbb;
 
-  --yellow: #805b00;
-  --yellow-bg: #fff6d6;
-  --yellow-border: #e6ca78;
+  --yellow: #b88200;
+  --yellow-bg: #fff8db;
+  --yellow-border: #edd074;
 
-  --orange: #9b4d14;
-  --orange-bg: #fff0e2;
-  --orange-border: #e7b18c;
+  --orange: #d4550c;
+  --orange-bg: #fff1e6;
+  --orange-border: #f2b48d;
 
   --red: #c43c4f;
   --red-bg: #fff0f2;
@@ -46,7 +46,7 @@
   --info-bg: #eaf2ff;
   --info-border: #b9cbe0;
 
-  /* Cores de Componentes e Formulários (Padrão Único de Azul no Modo Claro) */
+  /* Cores de Componentes e Formulários */
   --emergency: #d43b52;
   --emergency-hover: #c63449;
   --title-blue: #164e91;
@@ -94,7 +94,7 @@ body.dark {
   --surface-2: #1c2e46;
   --line: #33445a;
 
-  /* Bordas de Campos e Botões Secundários (Simétricas ao Modo Claro) */
+  /* Bordas de Campos e Botões Secundários */
   --field-border: #475970;
   --field-border-hover: #647d9c;
   --secondary-border: #385d8a;
@@ -105,13 +105,13 @@ body.dark {
   --green-bg: #173d31;
   --green-border: #2b6b55;
 
-  --yellow: #ffe69a;
-  --yellow-bg: #3a3019;
-  --yellow-border: #71602f;
+  --yellow: #ffd666;
+  --yellow-bg: #362d16;
+  --yellow-border: #786226;
 
-  --orange: #ffc19a;
-  --orange-bg: #41291e;
-  --orange-border: #805039;
+  --orange: #ff945e;
+  --orange-bg: #3d2118;
+  --orange-border: #874730;
 
   --red: #ff9eaa;
   --red-bg: #3b2027;
@@ -131,7 +131,7 @@ body.dark {
   --button-primary-hover: #3478bd;
   --button-text: #ffffff;
 
-  /* Padronização Rigorosa no Modo Escuro (Mesmo tom #8ab4f8 para todos os equivalentes) */
+  /* Padronização no Modo Escuro */
   --title-blue: #8ab4f8;
   --subtitle-info: #8ab4f8;
   --eyebrow-map: #8ab4f8;
