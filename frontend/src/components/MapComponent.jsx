@@ -9,7 +9,6 @@ function MapInstanceBinder({ mapRef }) {
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
-    // Garante recálculo correto de dimensões do container
     setTimeout(() => {
       map.invalidateSize();
     }, 100);
@@ -23,7 +22,7 @@ function createAuraPinIcon(region, isSelected) {
     iconSize: [76, 76],
     iconAnchor: [38, 38],
     html: `
-      <div class="aura-pin-wrapper ${isSelected ? 'selected' : ''}" role="button" aria-pressed="${isSelected}" aria-label="${region.name} - Nível ${region.level}">
+      <div class="aura-pin-wrapper ${isSelected ? 'selected' : ''}" role="presentation">
         <span class="aura-pin-halo-outer" style="background: ${region.color};"></span>
         <span class="aura-pin-halo-inner" style="background: ${region.color};"></span>
         <span class="aura-pin-core" style="background: ${region.color};">
@@ -58,7 +57,7 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
     }
   };
 
-  const handleMarkerClick = (region) => {
+  const handleMarkerSelect = (region) => {
     onSelectRegion(region.id);
     if (mapRef.current) {
       const currentZoom = mapRef.current.getZoom();
@@ -67,7 +66,7 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
   };
 
   return (
-    <div className="map" role="group" aria-label="Mapa interativo em tempo real de Porto Alegre">
+    <div className="map" role="region" aria-label="Mapa interativo em tempo real de Porto Alegre">
       <MapContainer
         center={POA_DEFAULT_CENTER}
         zoom={POA_DEFAULT_ZOOM}
@@ -94,30 +93,39 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
               key={reg.id}
               position={[reg.lat, reg.lng]}
               icon={createAuraPinIcon(reg, isSelected)}
+              alt={`${reg.name} — Nível ${reg.level}`}
+              title={`${reg.name} (${reg.level})`}
+              keyboard={true}
               zIndexOffset={isSelected ? 1000 : 0}
               eventHandlers={{
-                click: () => handleMarkerClick(reg),
+                click: () => handleMarkerSelect(reg),
+                keydown: (e) => {
+                  if (e.originalEvent.key === 'Enter' || e.originalEvent.key === ' ') {
+                    e.originalEvent.preventDefault();
+                    handleMarkerSelect(reg);
+                  }
+                }
               }}
             />
           );
         })}
       </MapContainer>
 
-      <div className="maplabel" id="mapLabel">
+      <div className="maplabel" id="mapLabel" aria-live="polite">
         {regionsData[selectedRegionId]?.name} · Porto Alegre
       </div>
 
-      <div className="mapcontrols">
-        <button type="button" onClick={handleZoomIn} aria-label="Aproximar mapa">＋</button>
-        <button type="button" onClick={handleZoomOut} aria-label="Afastar mapa">−</button>
-        <button type="button" onClick={handleReset} aria-label="Restaurar visualização">↺</button>
+      <div className="mapcontrols" role="group" aria-label="Controles de visualização do mapa">
+        <button type="button" onClick={handleZoomIn} title="Aproximar mapa" aria-label="Aproximar mapa">＋</button>
+        <button type="button" onClick={handleZoomOut} title="Afastar mapa" aria-label="Afastar mapa">−</button>
+        <button type="button" onClick={handleReset} title="Restaurar visualização inicial" aria-label="Restaurar visualização inicial">↺</button>
       </div>
 
-      <div className="maplegend">
+      <div className="maplegend" aria-label="Legenda de níveis informativos">
         <strong>Níveis informativos</strong>
-        <div className="legendrow"><i className="swatch attention"></i>Atenção</div>
-        <div className="legendrow"><i className="swatch alert"></i>Alerta</div>
-        <div className="legendrow"><i className="swatch danger"></i>Perigo</div>
+        <div className="legendrow"><i className="swatch attention" aria-hidden="true"></i>Atenção</div>
+        <div className="legendrow"><i className="swatch alert" aria-hidden="true"></i>Alerta</div>
+        <div className="legendrow"><i className="swatch danger" aria-hidden="true"></i>Perigo</div>
       </div>
 
       <div className="map-note">
