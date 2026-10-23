@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-const POA_DEFAULT_CENTER = [-30.0385, -51.2245];
+const POA_DEFAULT_CENTER = [-30.0385, -51.2200];
 const POA_DEFAULT_ZOOM = 14;
 
 function MapInstanceBinder({ mapRef }) {
@@ -16,17 +16,21 @@ function MapInstanceBinder({ mapRef }) {
   return null;
 }
 
+// Marcador limpo e sólido (sem ponto branco central), usando a cor semântica calculada pelo backend
 function createAuraPinIcon(region, isSelected) {
+  const pinColor = region.cor_hex || '#64748b';
+  const regionName = region.nome;
+
   return L.divIcon({
     className: 'aura-leaflet-marker',
     iconSize: [76, 76],
     iconAnchor: [38, 38],
     html: `
       <div class="aura-pin-wrapper ${isSelected ? 'selected' : ''}" role="presentation">
-        <span class="aura-pin-halo-outer" style="background: ${region.color};"></span>
-        <span class="aura-pin-halo-inner" style="background: ${region.color};"></span>
-        <span class="aura-pin-core" style="background: ${region.color};"></span>
-        <span class="aura-pin-tag">${region.name}</span>
+        <span class="aura-pin-halo-outer" style="background: ${pinColor};"></span>
+        <span class="aura-pin-halo-inner" style="background: ${pinColor};"></span>
+        <span class="aura-pin-core" style="background: ${pinColor};"></span>
+        <span class="aura-pin-tag">${regionName}</span>
       </div>
     `
   });
@@ -35,6 +39,7 @@ function createAuraPinIcon(region, isSelected) {
 export default function MapComponent({ regionsData, selectedRegionId, onSelectRegion }) {
   const mapRef = useRef(null);
   const regionsList = Object.values(regionsData);
+  const activeRegion = regionsData[selectedRegionId];
 
   const handleZoomIn = () => {
     if (mapRef.current) {
@@ -91,8 +96,8 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
               key={reg.id}
               position={[reg.lat, reg.lng]}
               icon={createAuraPinIcon(reg, isSelected)}
-              alt={`${reg.name} — Nível ${reg.level}`}
-              title={`${reg.name} (${reg.level})`}
+              alt={`${reg.nome} — ${reg.estado_semantico}`}
+              title={`${reg.nome} (${reg.estado_semantico})`}
               keyboard={true}
               zIndexOffset={isSelected ? 1000 : 0}
               eventHandlers={{
@@ -110,7 +115,7 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
       </MapContainer>
 
       <div className="maplabel" id="mapLabel" aria-live="polite">
-        {regionsData[selectedRegionId]?.name} · Porto Alegre
+        {activeRegion?.nome} · Porto Alegre
       </div>
 
       <div className="mapcontrols" role="group" aria-label="Controles de visualização do mapa">
@@ -119,15 +124,16 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
         <button type="button" onClick={handleReset} title="Restaurar visualização inicial" aria-label="Restaurar visualização inicial">↺</button>
       </div>
 
-      <div className="maplegend" aria-label="Legenda de níveis informativos">
-        <strong>Níveis informativos</strong>
+      <div className="maplegend" aria-label="Legenda de estados semânticos">
+        <strong>Estados semânticos</strong>
+        <div className="legendrow"><i className="swatch insufficient" aria-hidden="true"></i>Dados insuficientes</div>
         <div className="legendrow"><i className="swatch attention" aria-hidden="true"></i>Atenção</div>
-        <div className="legendrow"><i className="swatch alert" aria-hidden="true"></i>Alerta</div>
-        <div className="legendrow"><i className="swatch danger" aria-hidden="true"></i>Perigo</div>
+        <div className="legendrow"><i className="swatch alert" aria-hidden="true"></i>Atenção elevada</div>
+        <div className="legendrow"><i className="swatch danger" aria-hidden="true"></i>Atenção crítica</div>
       </div>
 
       <div className="map-note">
-        Mapa interativo em tempo real. Arraste para explorar Porto Alegre e clique para avaliar a região.
+        Mapa interativo em tempo real. Arraste para explorar Porto Alegre e clique para consultar os registros da região.
       </div>
     </div>
   );

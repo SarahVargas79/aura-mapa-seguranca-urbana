@@ -1,5 +1,12 @@
-import { useState, useEffect } from 'react';
-import { regionsDB } from './data/regionsData';
+import { useState, useEffect, useCallback } from 'react';
+import { initialRegionsDB, PERIODO_REFERENCIA_PADRAO } from './data/regionsData';
+import {
+  api,
+  getStoredToken,
+  getStoredUser,
+  saveAuthSession,
+  clearAuthSession,
+} from './services/api';
 import Header from './components/Header';
 import MapComponent from './components/MapComponent';
 import RegionDetailsPanel from './components/RegionDetailsPanel';
@@ -9,12 +16,16 @@ import Modals from './components/Modals';
 /**
  * COMPONENTE PRINCIPAL: App
  * -------------------------
- * Papel arquitetural (Orquestrador):
- * - Gerencia os estados globais da interface (região selecionada, tema claro/escuro,
- *   escala tipográfica de acessibilidade, sessão demonstrativa e modais).
- * - Conecta os componentes modulares passando dados e funções via propriedades (props).
+ * Integra o frontend React ao backend Django REST Framework:
+ * - Consulta os indicadores reais do banco SQLite em GET /api/indicadores/
+ * - Gerencia a sessão autenticada por Token (identificador_aura)
+ * - Atualiza o mapa e o painel lateral imediatamente após novos relatos
  */
 export default function App() {
+  const [regionsData, setRegionsData] = useState(initialRegionsDB);
+  const [periodoReferencia, setPeriodoReferencia] = useState(PERIODO_REFERENCIA_PADRAO);
+  const [apiConnected, setApiConnected] = useState(false);
+
   const [selectedRegionId, setSelectedRegionId] = useState('centro');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [fontScale, setFontScale] = useState(1);
@@ -22,15 +33,71 @@ export default function App() {
   const [accountPopoverOpen, setAccountPopoverOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [toast, setToast] = useState({ visible: false, message: '' });
 
-  // Estados controlados do formulário de percepção
+  // Bairro pré-selecionado ao abrir o formulário de percepção
   const [reportRegion, setReportRegion] = useState('centro');
-  const [reportType, setReportType] = useState('');
 
-  // Busca os dados da região ativa na camada de dados (com fallback seguro para 'centro')
-  const region = regionsDB[selectedRegionId] || regionsDB.centro;
+  const region = regionsData[selectedRegionId] || regionsData.centro;
+
+  const showToast = useCallback((message) => {
+    setToast({ visible: true, message });
+    setTimeout(() => setToast({ visible: false, message: '' }), 4000);
+  }, []);
+
+  // Consulta os indicadores calculados pelo motor do Django a partir do SQLite
+  const carregarIndicadores = useCallback(async () => {
+    try {
+      const data = await api.getIndicadores();
+      if (data && data.regioes) {
+        setRegionsData(data.regioes);
+        if (data.periodo_referencia_padrao) {
+          setPeriodoReferencia(data.periodo_referencia_padrao);
+        }
+        setApiConnected(true);
+      }
+    } catch {
+      setApiConnected(false);
+    }
+  }, []);
+
+  // Ao iniciar a aplicação: carrega os indicadores e valida eventual sessão salva
+  useEffect(() => {
+    let ativo = true;
+
+    api.getIndicadores()
+      .then((data) => {
+        if (!ativo || !data?.regioes) return;
+        setRegionsData(data.regioes);
+        if (data.periodo_referencia_padrao) {
+          setPeriodoReferencia(data.periodo_referencia_padrao);
+        }
+        setApiConnected(true);
+      })
+      .catch(() => {
+        if (ativo) setApiConnected(false);
+      });
+
+    const token = getStoredToken();
+    if (token) {
+      api.verificarSessao()
+        .then((res) => {
+          if (ativo && res?.usuario) {
+            setCurrentUser(res.usuario);
+          }
+        })
+        .catch(() => {
+          if (!ativo) return;
+          clearAuthSession();
+          setCurrentUser(null);
+        });
+    }
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   // Sincroniza a classe 'dark' no <body> e a variável CSS '--scale' no <html>
   useEffect(() => {
@@ -55,33 +122,42 @@ export default function App() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [activeModal, accessPanelOpen, accountPopoverOpen, mobileNavOpen]);
 
-  const showToast = (message) => {
-    setToast({ visible: true, message });
-    setTimeout(() => setToast({ visible: false, message: '' }), 3500);
-  };
-
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    setIsLoggedIn(true);
+  const handleAuthSuccess = (token, usuario, mensagem) => {
+    saveAuthSession(token, usuario);
+    setCurrentUser(usuario);
     setActiveModal(null);
-    showToast('Sessão iniciada com sucesso.');
+    showToast(mensagem || `Sessão iniciada como ${usuario.identificador_aura}.`);
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Mesmo se o servidor estiver indisponível, limpa a sessão local com segurança
+    }
+    clearAuthSession();
+    setCurrentUser(null);
     setAccountPopoverOpen(false);
-    showToast('Sessão de demonstração encerrada.');
+    showToast('Sessão encerrada com sucesso.');
   };
 
   const requireLogin = (modalName) => {
-    if (isLoggedIn) {
+    if (currentUser) {
       if (modalName === 'community') {
-        showToast('Esta demonstração não possui chat online.');
+        showToast('O fórum comunitário estará disponível em etapa futura.');
       } else {
+        setReportRegion(selectedRegionId);
         setActiveModal(modalName);
       }
     } else {
       setActiveModal('auth');
+    }
+  };
+
+  const handleReportSuccess = async (regiaoRegistrada) => {
+    await carregarIndicadores();
+    if (regiaoRegistrada) {
+      setSelectedRegionId(regiaoRegistrada);
     }
   };
 
@@ -116,7 +192,7 @@ export default function App() {
         setAccountPopoverOpen={setAccountPopoverOpen}
         mobileNavOpen={mobileNavOpen}
         setMobileNavOpen={setMobileNavOpen}
-        isLoggedIn={isLoggedIn}
+        currentUser={currentUser}
         onOpenAuthModal={() => setActiveModal('auth')}
         onLogout={handleLogout}
         onHelpClick={() => scrollToSupport('Canais oficiais de apoio: Ligue 180 ou 190 em caso de emergência.')}
@@ -129,7 +205,7 @@ export default function App() {
             <p className="eyebrow">Porto Alegre · prevenção e informação</p>
             <h1>Seu caminho, com mais informação.</h1>
             <p className="hero-copy">
-              Consulte fatores de atenção no território e encontre orientações de apoio para seus deslocamentos.
+              Consulte indicadores de percepção comunitária no território e encontre orientações de apoio para seus deslocamentos.
             </p>
             <div className="hero-actions">
               <button type="button" className="btn primary" onClick={() => requireLogin('report')}>
@@ -141,7 +217,11 @@ export default function App() {
               <button
                 type="button"
                 className="btn secondary"
-                onClick={() => showToast('Os níveis do mapa são indicadores de exemplo explicativos do projeto.')}
+                onClick={() =>
+                  showToast(
+                    'Os estados semânticos refletem o volume de relatos elegíveis nos últimos 90 dias (0 = Dados insuficientes; 1–2 = Atenção; 3–5 = Atenção elevada; 6+ = Atenção crítica).'
+                  )
+                }
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
                   <circle cx="12" cy="12" r="9"/>
@@ -160,22 +240,25 @@ export default function App() {
               <div className="panelhead">
                 <div className="panelhead-main">
                   <h2>Mapa urbano preventivo</h2>
-                  <p>Selecione uma região.</p>
+                  <p>Selecione uma região de Porto Alegre para consultar os indicadores.</p>
                 </div>
                 <span className="pill live">
                   <span className="live-dot" aria-hidden="true"></span>
-                  Mapa demonstrativo
+                  {apiConnected ? 'Dados do banco local' : 'Aguardando conexão API'}
                 </span>
               </div>
               <div className="mapwrap">
                 <MapComponent
-                  regionsData={regionsDB}
+                  regionsData={regionsData}
                   selectedRegionId={selectedRegionId}
-                  onSelectRegion={setSelectedRegionId}
+                  onSelectRegion={(regId) => {
+                    setSelectedRegionId(regId);
+                    setReportRegion(regId);
+                  }}
                 />
                 <div className="map-foot">
-                  <span>◉ <strong>Dados ilustrativos</strong>.</span>
-                  <span>Metodologia deve ser documentada.</span>
+                  <span>◉ <strong>Janela de referência:</strong> {periodoReferencia}.</span>
+                  <span>Critérios operacionais baseados no volume de relatos elegíveis.</span>
                 </div>
               </div>
             </section>
@@ -194,14 +277,14 @@ export default function App() {
 
       <footer className="footer">
         <div className="footer-inner">
-          <span>© AURA · Mapa de Segurança Urbana para Mulheres · Protótipo acadêmico</span>
+          <span>© AURA · Mapa de Segurança Urbana para Mulheres · Projeto acadêmico</span>
           <span className="footer-links">
             <a href="#apoio">Canais de apoio</a>
             <a
               href="#privacidade"
               onClick={(e) => {
                 e.preventDefault();
-                showToast('Política de privacidade em construção.');
+                showToast('O AURA utiliza apenas identificador de usuário e região aproximada, sem exigir nome civil ou e-mail.');
               }}
             >
               Privacidade
@@ -223,11 +306,10 @@ export default function App() {
       <Modals
         activeModal={activeModal}
         onCloseModal={() => setActiveModal(null)}
-        onLoginSubmit={handleLoginSubmit}
+        onAuthSuccess={handleAuthSuccess}
+        onReportSuccess={handleReportSuccess}
         reportRegion={reportRegion}
         setReportRegion={setReportRegion}
-        reportType={reportType}
-        setReportType={setReportType}
         onShowToast={showToast}
       />
     </>

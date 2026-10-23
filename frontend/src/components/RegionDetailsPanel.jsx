@@ -1,62 +1,102 @@
 /**
  * COMPONENTE: RegionDetailsPanel
  * ------------------------------
- * Exibe na coluna direita as informações detalhadas da região selecionada no mapa
- * (nível de atenção, descrição contextual, barras de fatores considerados e aviso legal),
- * além do bloco de acesso direto aos canais oficiais (Ligue 180 e 190).
+ * Apresenta na coluna direita os indicadores semânticos retornados pelo Django:
+ * - Nome da região
+ * - Estado semântico (Dados insuficientes, Atenção, Atenção elevada, Atenção crítica)
+ * - Quantidade de relatos considerados no período de referência (últimos 90 dias)
+ * - Período analisado
+ * - Categorias disponíveis nos registros da região
+ * - Aviso de limitação metodológica quando houver poucos dados ou registros indeterminados
  */
 export default function RegionDetailsPanel({ region }) {
+  const totalElegiveis = region.quantidade_relatos || 0;
+  const totalIndeterminados = region.quantidade_historicos_indeterminados || 0;
+  const categorias = region.categorias_registradas || [];
+
   return (
     <aside className="rightcol" aria-label="Detalhes da região e canais de apoio">
       <section className="panel region-panel" aria-live="polite">
         <div className="panelhead">
           <div className="panelhead-main">
             <p className="eyebrow">Detalhes da região</p>
-            <h2 style={{ color: `var(--${region.levelClass})` }}>{region.name}</h2>
+            <h2 style={{ color: `var(--${region.cor_classe})` }}>{region.nome}</h2>
           </div>
-          <span className={`pill ${region.levelClass}`}>{region.level}</span>
+          <span className={`pill ${region.cor_classe}`}>{region.estado_semantico}</span>
         </div>
 
         <div className="regionbody">
-          <div className={`level ${region.levelClass}`}>
-            <span className="leveldot" style={{ background: region.color }} aria-hidden="true"></span>
+          <div className={`level ${region.cor_classe}`}>
+            <span className="leveldot" style={{ background: region.cor_hex }} aria-hidden="true"></span>
             <div>
-              <strong>{region.level}</strong>
-              <div className="levelsub">{region.sub}</div>
+              <strong>{region.estado_semantico}</strong>
+              <div className="levelsub">{region.subtitulo_estado}</div>
             </div>
           </div>
 
-          <p className="region-copy">{region.copy}</p>
+          <div className="indicator-meta">
+            <div className="meta-row">
+              <strong>Relatos no período:</strong>
+              <span>
+                {totalElegiveis} {totalElegiveis === 1 ? 'relato elegível' : 'relatos elegíveis'}
+              </span>
+            </div>
+            <div className="meta-row">
+              <strong>Período analisado:</strong>
+              <span>{region.periodo_referencia}</span>
+            </div>
+            {totalIndeterminados > 0 && (
+              <div className="meta-row">
+                <strong>Registros históricos / indeterminados:</strong>
+                <span>
+                  {totalIndeterminados} (mantidos separadamente do indicador)
+                </span>
+              </div>
+            )}
+          </div>
 
           <div className="detail-block">
-            <h3>Fatores considerados</h3>
-            <div className="factor-list">
-              {region.factors.map((f, idx) => (
-                <div className="factor" key={idx}>
-                  <strong>{f[0]}</strong>
-                  <span className={`value factor-value-${f[3]}`}>{f[1]}</span>
-                  <div
-                    className="track"
-                    role="progressbar"
-                    aria-label={f[0]}
-                    aria-valuenow={f[2]}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  >
-                    <span
-                      style={{
-                        width: `${f[2]}%`,
-                        background: idx === 0 ? region.color : idx === 1 ? 'var(--blue)' : 'var(--purple)'
-                      }}
-                    ></span>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h3>Categorias disponíveis nos registros</h3>
+            {categorias.length > 0 ? (
+              <div className="factor-list">
+                {categorias.map((cat, idx) => {
+                  const percentual = totalElegiveis > 0
+                    ? Math.round((cat.quantidade / totalElegiveis) * 100)
+                    : 0;
+                  return (
+                    <div className="factor" key={cat.id}>
+                      <strong>{cat.rotulo}</strong>
+                      <span className="value factor-value-check">
+                        {cat.quantidade} {cat.quantidade === 1 ? 'relato' : 'relatos'}
+                      </span>
+                      <div
+                        className="track"
+                        role="progressbar"
+                        aria-label={cat.rotulo}
+                        aria-valuenow={percentual}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <span
+                          style={{
+                            width: `${Math.max(percentual, 12)}%`,
+                            background: idx === 0 ? region.cor_hex : idx % 2 === 1 ? 'var(--blue)' : 'var(--purple)'
+                          }}
+                        ></span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="empty-factors">
+                Nenhuma categoria registrada nesta região dentro do período de referência analisado.
+              </p>
+            )}
           </div>
 
           <div className="disclaimer">
-            <strong>Importante:</strong> níveis fictícios desta demonstração. Não preveem crimes nem substituem orientações de emergência.
+            <strong>Importante:</strong> {region.aviso_limitacao}
           </div>
         </div>
       </section>

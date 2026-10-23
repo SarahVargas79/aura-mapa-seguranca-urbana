@@ -17,7 +17,7 @@ export default function Header({
   setAccountPopoverOpen,
   mobileNavOpen,
   setMobileNavOpen,
-  isLoggedIn,
+  currentUser,
   onOpenAuthModal,
   onLogout,
   onHelpClick
@@ -26,6 +26,8 @@ export default function Header({
   const accessBtnRef = useRef(null);
   const accountPopoverRef = useRef(null);
   const accountBtnRef = useRef(null);
+
+  const isLoggedIn = Boolean(currentUser);
 
   // Fecha os popovers de Acessibilidade e Conta ao clicar fora deles
   useEffect(() => {
@@ -147,7 +149,7 @@ export default function Header({
                   <circle cx="12" cy="8" r="3.5"/>
                   <path d="M5 20c.6-3.2 3.1-5 7-5s6.4 1.8 7 5"/>
                 </svg>
-                <span className="header-text">Minha conta</span>
+                <span className="header-text">{currentUser.identificador_aura}</span>
               </button>
             )}
 
@@ -176,15 +178,15 @@ export default function Header({
         </nav>
       </header>
 
-      {/* Popover de Conta */}
+      {/* Popover de Conta Autenticada */}
       <aside
         id="popover-conta"
         ref={accountPopoverRef}
         className={`account-popover ${accountPopoverOpen ? 'open' : ''}`}
         aria-label="Informações da sessão"
       >
-        <strong>Sessão de demonstração</strong>
-        <p>O acesso está simulado localmente. Nenhum dado foi enviado.</p>
+        <strong>Identificador: {currentUser?.identificador_aura}</strong>
+        <p>Sessão autenticada no servidor. Seus relatos são vinculados ao seu identificador AURA.</p>
         <div className="account-actions">
           <button type="button" className="btn secondary small" onClick={() => setAccountPopoverOpen(false)}>Fechar</button>
           <button type="button" className="btn small purple" style={{ border: 'none' }} onClick={onLogout}>Sair</button>
