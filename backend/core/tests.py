@@ -42,6 +42,7 @@ class AuraFullStackTests(TestCase):
         """Garante que apenas usuárias autenticadas registrem relatos e que o autor venha do token."""
         payload = {
             'regiao': 'centro',
+            'trecho': 'Rua dos Andradas, próximo à Esquina Democrática',
             'categoria': 'iluminacao',
             'turno_ocorrencia': 'noite',
             'periodo_ocorrencia': 'de_1_a_7_dias',
@@ -62,6 +63,7 @@ class AuraFullStackTests(TestCase):
 
         relato_salvo = Relato.objects.first()
         self.assertEqual(relato_salvo.autor, user1)
+        self.assertEqual(relato_salvo.trecho, 'Rua dos Andradas, próximo à Esquina Democrática')
 
     def test_motor_indicadores_sem_dados_e_limites_contagem(self):
         """
@@ -80,11 +82,13 @@ class AuraFullStackTests(TestCase):
         self.assertEqual(centro['quantidade_relatos'], 0)
         self.assertEqual(centro['estado_semantico'], 'Dados insuficientes')
         self.assertEqual(centro['cor_classe'], 'gray')
+        self.assertEqual(centro['trechos_registrados'], [])
 
         # 1 relato elegível -> Atenção (yellow)
         Relato.objects.create(
             autor=user,
             regiao='centro',
+            trecho='Rua dos Andradas',
             categoria='iluminacao',
             turno_ocorrencia='noite',
             periodo_ocorrencia='hoje',
@@ -97,6 +101,7 @@ class AuraFullStackTests(TestCase):
         Relato.objects.create(
             autor=user,
             regiao='centro',
+            trecho='Rua dos Andradas',
             categoria='isolamento',
             turno_ocorrencia='madrugada',
             periodo_ocorrencia='de_31_a_60_dias',
@@ -104,6 +109,7 @@ class AuraFullStackTests(TestCase):
         Relato.objects.create(
             autor=user,
             regiao='centro',
+            trecho='Rua dos Andradas',
             categoria='isolamento',
             turno_ocorrencia='madrugada',
             periodo_ocorrencia='de_61_a_90_dias',
@@ -118,6 +124,7 @@ class AuraFullStackTests(TestCase):
             Relato.objects.create(
                 autor=user,
                 regiao='centro',
+                trecho='Largo Glênio Peres',
                 categoria='assedio',
                 turno_ocorrencia='noite',
                 periodo_ocorrencia='de_8_a_30_dias',
@@ -138,6 +145,7 @@ class AuraFullStackTests(TestCase):
         Relato.objects.create(
             autor=user,
             regiao='cidade',
+            trecho='Rua da República',
             categoria='iluminacao',
             turno_ocorrencia='noite',
             periodo_ocorrencia='mais_de_90_dias',
@@ -146,6 +154,7 @@ class AuraFullStackTests(TestCase):
         Relato.objects.create(
             autor=user,
             regiao='cidade',
+            trecho='Rua da República',
             categoria='transporte',
             turno_ocorrencia='tarde',
             periodo_ocorrencia='nao_sei',
@@ -154,6 +163,7 @@ class AuraFullStackTests(TestCase):
         relato_antigo = Relato.objects.create(
             autor=user,
             regiao='cidade',
+            trecho='Rua da República',
             categoria='isolamento',
             turno_ocorrencia='noite',
             periodo_ocorrencia='hoje',
@@ -169,13 +179,14 @@ class AuraFullStackTests(TestCase):
         self.assertEqual(cidade['quantidade_periodo_desconhecido'], 1)
         self.assertEqual(cidade['quantidade_historicos_indeterminados'], 3)
         self.assertEqual(cidade['categorias_registradas'], [])
+        self.assertEqual(cidade['trechos_registrados'], [])
         self.assertEqual(cidade['estado_semantico'], 'Dados insuficientes')
         self.assertEqual(cidade['cor_classe'], 'gray')
 
     def test_coerencia_categorias_e_validacoes_formulario(self):
         """
         Verifica que apenas relatos elegíveis compõem as categorias registradas
-        e testa as mensagens de validação de cadastro e relato.
+        e testa as mensagens de validação de cadastro e relato (incluindo trecho).
         """
         # Teste de validação de identificador fora do padrão (menos de 3 caracteres)
         resp_invalido = self.client.post(
@@ -188,11 +199,41 @@ class AuraFullStackTests(TestCase):
         user = User.objects.create_user(username='usuaria_teste', password='SenhaSegura123')
         self.client.force_authenticate(user=user)
 
+        # Validação do trecho obrigatório e tamanho mínimo
+        resp_sem_trecho = self.client.post(
+            '/api/relatos/',
+            {
+                'regiao': 'bom_fim',
+                'trecho': '',
+                'categoria': 'transporte',
+                'turno_ocorrencia': 'noite',
+                'periodo_ocorrencia': 'de_1_a_7_dias',
+            },
+            format='json',
+        )
+        self.assertEqual(resp_sem_trecho.status_code, 400)
+        self.assertIn('trecho', resp_sem_trecho.data)
+
+        resp_trecho_curto = self.client.post(
+            '/api/relatos/',
+            {
+                'regiao': 'bom_fim',
+                'trecho': 'ab',
+                'categoria': 'transporte',
+                'turno_ocorrencia': 'noite',
+                'periodo_ocorrencia': 'de_1_a_7_dias',
+            },
+            format='json',
+        )
+        self.assertEqual(resp_trecho_curto.status_code, 400)
+        self.assertIn('trecho', resp_trecho_curto.data)
+
         # Relato elegível (de_1_a_7_dias)
         self.client.post(
             '/api/relatos/',
             {
                 'regiao': 'bom_fim',
+                'trecho': 'Av. Osvaldo Aranha, próximo ao Parque Farroupilha',
                 'categoria': 'transporte',
                 'turno_ocorrencia': 'noite',
                 'periodo_ocorrencia': 'de_1_a_7_dias',
@@ -204,6 +245,7 @@ class AuraFullStackTests(TestCase):
             '/api/relatos/',
             {
                 'regiao': 'bom_fim',
+                'trecho': 'Av. Osvaldo Aranha, próximo ao Parque Farroupilha',
                 'categoria': 'assedio',
                 'turno_ocorrencia': 'tarde',
                 'periodo_ocorrencia': 'mais_de_90_dias',
@@ -222,3 +264,69 @@ class AuraFullStackTests(TestCase):
             'Problema em ponto de transporte',
         )
         self.assertEqual(bom_fim['categorias_registradas'][0]['quantidade'], 1)
+
+    def test_agregacao_e_ordenacao_trechos_com_pelo_menos_3_relatos(self):
+        """
+        Verifica que:
+        - Trechos com menos de 3 relatos elegíveis não são listados.
+        - Variações simples de caixa, acentuação e pontuação são agrupadas no mesmo trecho.
+        - A ordem considera prioridade preventiva (assedio > isolamento > transporte > iluminacao > infraestrutura),
+          volume na categoria prioritária e total de relatos.
+        """
+        user = User.objects.create_user(username='trechos_tester', password='SenhaSegura123')
+
+        # Trecho A: 2 relatos elegíveis -> NÃO deve aparecer
+        for _ in range(2):
+            Relato.objects.create(
+                autor=user,
+                regiao='moinhos',
+                trecho='Rua Padre Chagas',
+                categoria='assedio',
+                turno_ocorrencia='noite',
+                periodo_ocorrencia='hoje',
+            )
+
+        # Trecho B: 4 relatos de iluminação (com variação de escrita)
+        variacoes_b = [
+            'Rua 24 de Outubro, próximo à Praça',
+            'rua 24 de outubro proximo a praca',
+            'Rua 24 de Outubro, próximo à praça.',
+            'Rua 24 de Outubro,  próximo à Praça',
+        ]
+        for texto in variacoes_b:
+            Relato.objects.create(
+                autor=user,
+                regiao='moinhos',
+                trecho=texto,
+                categoria='iluminacao',
+                turno_ocorrencia='noite',
+                periodo_ocorrencia='de_1_a_7_dias',
+            )
+
+        # Trecho C: 3 relatos de assédio (prioridade preventiva 1 > iluminação prioridade 4)
+        for _ in range(3):
+            Relato.objects.create(
+                autor=user,
+                regiao='moinhos',
+                trecho='Parcão, lateral da Av. Goethe',
+                categoria='assedio',
+                turno_ocorrencia='noite',
+                periodo_ocorrencia='de_8_a_30_dias',
+            )
+
+        resp = self.client.get('/api/indicadores/')
+        moinhos = resp.data['regioes']['moinhos']
+        trechos = moinhos['trechos_registrados']
+
+        self.assertEqual(len(trechos), 2)
+        # Primeiro deve vir o trecho com categoria prioritária 'assedio'
+        self.assertEqual(trechos[0]['nome'], 'Parcão, lateral da Av. Goethe')
+        self.assertEqual(trechos[0]['quantidade'], 3)
+        self.assertEqual(trechos[0]['categoria_destaque']['id'], 'assedio')
+        self.assertEqual(trechos[0]['categoria_destaque']['quantidade'], 3)
+
+        # Segundo deve vir o trecho de 'iluminacao' com 4 relatos agrupados
+        self.assertEqual(trechos[1]['nome'], 'Rua 24 de Outubro, próximo à Praça')
+        self.assertEqual(trechos[1]['quantidade'], 4)
+        self.assertEqual(trechos[1]['categoria_destaque']['id'], 'iluminacao')
+        self.assertEqual(trechos[1]['categoria_destaque']['quantidade'], 4)

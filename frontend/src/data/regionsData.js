@@ -35,6 +35,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   cidade: {
@@ -54,6 +55,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   menino: {
@@ -73,6 +75,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   bom_fim: {
@@ -92,6 +95,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   moinhos: {
@@ -111,6 +115,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   praia_de_belas: {
@@ -130,6 +135,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
+    trechos_registrados: [],
     aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
 };

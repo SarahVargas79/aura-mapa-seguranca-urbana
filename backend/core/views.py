@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from datetime import timedelta
 from django.db.models import Count
 from django.utils import timezone
@@ -9,6 +11,30 @@ from rest_framework.views import APIView
 
 from .models import REGIOES_POA_METADATA, Relato
 from .serializers import CadastroAuraSerializer, LoginAuraSerializer, RelatoSerializer
+
+# Regra operacional preventiva para ordenar os trechos sem atribuir pesos arbitrários de perigo
+ORDEM_PRIORIDADE_PREVENTIVA = {
+    'assedio': 1,
+    'isolamento': 2,
+    'transporte': 3,
+    'iluminacao': 4,
+    'infraestrutura': 5,
+}
+
+
+def normalizar_chave_trecho(valor: str) -> str:
+    """
+    Normaliza o texto do trecho para agrupar variações simples de escrita
+    (acentos, pontuação básica, maiúsculas/minúsculas e espaços repetidos).
+    """
+    if not valor:
+        return ''
+    sem_acentos = ''.join(
+        c for c in unicodedata.normalize('NFD', str(valor))
+        if unicodedata.category(c) != 'Mn'
+    )
+    limpo = re.sub(r'[.,]', '', sem_acentos.lower())
+    return re.sub(r'\s+', ' ', limpo).strip()
 
 
 def classificar_volume_relatos(quantidade_elegivel: int) -> dict:
@@ -226,6 +252,7 @@ class IndicadoresView(APIView):
 
         rotulos_categorias = dict(Relato.CategoriaChoices.choices)
         rotulos_turnos = dict(Relato.TurnoChoices.choices)
+        rotulos_periodos = dict(Relato.PeriodoChoices.choices)
 
         categorias_por_regiao = {}
         for row in categorias_rows:
@@ -245,6 +272,132 @@ class IndicadoresView(APIView):
                 'quantidade': row['total'],
             })
 
+        # Agrupamento de trechos elegíveis por região
+        trechos_agrupados_por_regiao = {}
+        for rel in qs_elegiveis.values(
+            'regiao', 'trecho', 'categoria', 'turno_ocorrencia', 'periodo_ocorrencia'
+        ).order_by('id'):
+            trecho_exibicao = re.sub(r'\s+', ' ', (rel['trecho'] or '').strip())
+            chave_trecho = normalizar_chave_trecho(trecho_exibicao)
+            if not chave_trecho:
+                continue
+
+            reg_id = rel['regiao']
+            mapa_trechos = trechos_agrupados_por_regiao.setdefault(reg_id, {})
+            if chave_trecho not in mapa_trechos:
+                mapa_trechos[chave_trecho] = {
+                    'nome': trecho_exibicao,
+                    'quantidade': 0,
+                    'categorias': {},
+                    'turnos': {},
+                    'periodos': {},
+                }
+            registro_trecho = mapa_trechos[chave_trecho]
+            registro_trecho['quantidade'] += 1
+
+            cat_id = rel['categoria']
+            if cat_id:
+                registro_trecho['categorias'][cat_id] = (
+                    registro_trecho['categorias'].get(cat_id, 0) + 1
+                )
+            turno_id = rel['turno_ocorrencia']
+            if turno_id:
+                registro_trecho['turnos'][turno_id] = (
+                    registro_trecho['turnos'].get(turno_id, 0) + 1
+                )
+            per_id = rel['periodo_ocorrencia']
+            if per_id:
+                registro_trecho['periodos'][per_id] = (
+                    registro_trecho['periodos'].get(per_id, 0) + 1
+                )
+
+        trechos_por_regiao = {}
+        for reg_id, mapa_trechos in trechos_agrupados_por_regiao.items():
+            lista_trechos = []
+            for trecho in mapa_trechos.values():
+                # Apenas trechos com 3 ou mais relatos elegíveis são exibidos publicamente
+                if trecho['quantidade'] < 3:
+                    continue
+
+                categorias_com_volume_suficiente = [
+                    {
+                        'id': cat_id,
+                        'rotulo': rotulos_categorias.get(cat_id, cat_id),
+                        'quantidade': qtd,
+                    }
+                    for cat_id, qtd in trecho['categorias'].items()
+                    if qtd >= 3
+                ]
+                categorias_com_volume_suficiente.sort(
+                    key=lambda item: (
+                        ORDEM_PRIORIDADE_PREVENTIVA.get(item['id'], 99),
+                        -item['quantidade'],
+                        item['rotulo'].lower(),
+                    )
+                )
+                categoria_destaque = (
+                    categorias_com_volume_suficiente[0]
+                    if categorias_com_volume_suficiente
+                    else None
+                )
+
+                resumo_categorias = [
+                    {
+                        'id': cat_id,
+                        'rotulo': rotulos_categorias.get(cat_id, cat_id),
+                        'quantidade': qtd,
+                    }
+                    for cat_id, qtd in trecho['categorias'].items()
+                    if qtd >= 3
+                ]
+                resumo_categorias.sort(key=lambda item: (-item['quantidade'], item['rotulo'].lower()))
+
+                resumo_turnos = [
+                    {
+                        'id': turno_id,
+                        'rotulo': rotulos_turnos.get(turno_id, turno_id),
+                        'quantidade': qtd,
+                    }
+                    for turno_id, qtd in trecho['turnos'].items()
+                    if qtd >= 3
+                ]
+                resumo_turnos.sort(key=lambda item: (-item['quantidade'], item['rotulo'].lower()))
+
+                resumo_periodos = [
+                    {
+                        'id': per_id,
+                        'rotulo': rotulos_periodos.get(per_id, per_id),
+                        'quantidade': qtd,
+                    }
+                    for per_id, qtd in trecho['periodos'].items()
+                    if qtd >= 3
+                ]
+                resumo_periodos.sort(key=lambda item: (-item['quantidade'], item['rotulo'].lower()))
+
+                lista_trechos.append({
+                    'nome': trecho['nome'],
+                    'quantidade': trecho['quantidade'],
+                    'categoria_destaque': categoria_destaque,
+                    'categorias_com_volume_suficiente': categorias_com_volume_suficiente,
+                    'resumo': {
+                        'categorias': resumo_categorias,
+                        'turnos': resumo_turnos,
+                        'periodos': resumo_periodos,
+                    },
+                })
+
+            lista_trechos.sort(
+                key=lambda item: (
+                    ORDEM_PRIORIDADE_PREVENTIVA.get(item['categoria_destaque']['id'], 99)
+                    if item['categoria_destaque']
+                    else 999,
+                    -(item['categoria_destaque']['quantidade'] if item['categoria_destaque'] else 0),
+                    -item['quantidade'],
+                    item['nome'].lower(),
+                )
+            )
+            trechos_por_regiao[reg_id] = lista_trechos
+
         regioes_resposta = {}
 
         for reg_id, meta in REGIOES_POA_METADATA.items():
@@ -255,6 +408,7 @@ class IndicadoresView(APIView):
             classificacao = classificar_volume_relatos(qtd_elegivel)
             lista_categorias = categorias_por_regiao.get(reg_id, [])
             lista_turnos = turnos_por_regiao.get(reg_id, [])
+            lista_trechos = trechos_por_regiao.get(reg_id, [])
 
             avisos = []
             if 0 < qtd_elegivel <= 2:
@@ -283,6 +437,7 @@ class IndicadoresView(APIView):
                 'periodo_referencia': periodo_referencia_texto,
                 'categorias_registradas': lista_categorias,
                 'turnos_registrados': lista_turnos,
+                'trechos_registrados': lista_trechos,
                 'aviso_limitacao': aviso_limitacao,
             }
 

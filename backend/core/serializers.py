@@ -106,6 +106,17 @@ class RelatoSerializer(serializers.ModelSerializer):
     categoria_nome = serializers.CharField(source='get_categoria_display', read_only=True)
     turno_nome = serializers.CharField(source='get_turno_ocorrencia_display', read_only=True)
     periodo_nome = serializers.CharField(source='get_periodo_ocorrencia_display', read_only=True)
+    trecho = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=100,
+        trim_whitespace=True,
+        error_messages={
+            'required': 'Informe a rua, o cruzamento ou o trecho aproximado da ocorrência.',
+            'blank': 'Informe a rua, o cruzamento ou o trecho aproximado da ocorrência.',
+            'max_length': 'O trecho de referência deve ter no máximo 100 caracteres.',
+        },
+    )
 
     class Meta:
         model = Relato
@@ -113,6 +124,7 @@ class RelatoSerializer(serializers.ModelSerializer):
             'id',
             'regiao',
             'regiao_nome',
+            'trecho',
             'categoria',
             'categoria_nome',
             'turno_ocorrencia',
@@ -149,6 +161,22 @@ class RelatoSerializer(serializers.ModelSerializer):
                 }
             },
         }
+
+    def validate_trecho(self, value):
+        texto = re.sub(r'\s+', ' ', (value or '').strip())
+        if not texto:
+            raise serializers.ValidationError(
+                'Informe a rua, o cruzamento ou o trecho aproximado da ocorrência.'
+            )
+        if len(texto) < 3:
+            raise serializers.ValidationError(
+                'Informe pelo menos 3 caracteres para identificar a rua ou o trecho.'
+            )
+        if len(texto) > 100:
+            raise serializers.ValidationError(
+                'O trecho de referência deve ter no máximo 100 caracteres.'
+            )
+        return texto
 
     def validate_descricao_objetiva(self, value):
         if not value:

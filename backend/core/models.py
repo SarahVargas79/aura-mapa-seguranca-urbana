@@ -56,7 +56,7 @@ class Relato(models.Model):
 
     Observações metodológicas e de privacidade:
     - O autor é sempre vinculado ao usuário autenticado na requisição (nunca enviado livremente pelo cliente).
-    - Não armazena geolocalização GPS exata da usuária, apenas o bairro/região aproximada.
+    - Não armazena geolocalização GPS exata da usuária, apenas o bairro/região e a rua ou trecho aproximado.
     - O campo 'periodo_ocorrencia' representa uma estimativa informada pela usuária,
       enquanto 'data_registro' armazena automaticamente quando o relato foi salvo no sistema.
     """
@@ -110,6 +110,11 @@ class Relato(models.Model):
         max_length=40,
         choices=RegiaoChoices.choices,
         verbose_name='Bairro / Região',
+    )
+    trecho = models.CharField(
+        max_length=100,
+        default='',
+        verbose_name='Rua ou trecho de referência',
     )
     categoria = models.CharField(
         max_length=40,

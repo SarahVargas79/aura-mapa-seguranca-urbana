@@ -15,9 +15,9 @@ import { api } from '../services/api';
  * 1. Modal "Área de acesso" (auth):
  *    - Login e cadastro utilizando apenas identificador_aura e senha.
  * 2. Modal "Compartilhar relato" (report):
- *    - Registra uma situação ou condição observada em Porto Alegre.
+ *    - Registra uma situação ou condição observada em Porto Alegre (incluindo rua ou trecho de referência).
  * 3. Modal "Como funciona o indicador" (how):
- *    - Explica a janela de referência de 90 dias, as faixas de classificação e os registros separados.
+ *    - Explica a janela de referência de 90 dias, as faixas de classificação, a lista de trechos e os registros separados.
  * 4. Modal "Privacidade no AURA" (privacy):
  *    - Concentra as informações sobre uso dos dados, localização aproximada e cadastro.
  */
@@ -39,6 +39,7 @@ export default function Modals({
   const [authLoading, setAuthLoading] = useState(false);
 
   // Estados do formulário "Compartilhar relato"
+  const [reportLocation, setReportLocation] = useState('');
   const [reportType, setReportType] = useState('');
   const [reportShift, setReportShift] = useState('');
   const [reportPeriod, setReportPeriod] = useState('');
@@ -60,6 +61,7 @@ export default function Modals({
   const authErrorRef = useRef(null);
 
   const regiaoSelectRef = useRef(null);
+  const locationInputRef = useRef(null);
   const categoriaSelectRef = useRef(null);
   const periodoSelectRef = useRef(null);
   const turnoSelectRef = useRef(null);
@@ -189,10 +191,24 @@ export default function Modals({
     setReportError('');
     setReportInvalidSelect('');
 
+    const trechoInformado = reportLocation.trim().replace(/\s+/g, ' ');
+
     if (!reportRegion) {
       setReportError('Selecione o bairro ou a região.');
       setReportInvalidSelect('regiao');
       regiaoSelectRef.current?.focus();
+      return;
+    }
+    if (!trechoInformado) {
+      setReportError('Informe a rua, o cruzamento ou o trecho aproximado da ocorrência.');
+      setReportInvalidSelect('trecho');
+      locationInputRef.current?.focus();
+      return;
+    }
+    if (trechoInformado.length < 3) {
+      setReportError('Informe pelo menos 3 caracteres para identificar a rua ou o trecho.');
+      setReportInvalidSelect('trecho');
+      locationInputRef.current?.focus();
       return;
     }
     if (!reportType) {
@@ -225,6 +241,7 @@ export default function Modals({
     try {
       await api.criarRelato({
         regiao: reportRegion,
+        trecho: trechoInformado,
         categoria: reportType,
         turno_ocorrencia: reportShift,
         periodo_ocorrencia: reportPeriod,
@@ -232,6 +249,7 @@ export default function Modals({
       });
 
       const regiaoAlvo = reportRegion;
+      setReportLocation('');
       setReportType('');
       setReportShift('');
       setReportPeriod('');
@@ -452,7 +470,7 @@ export default function Modals({
             noValidate
           >
             <p className="modal-description">
-              Informe apenas o necessário para orientar outras mulheres na região selecionada. O período da ocorrência é uma estimativa e não substitui boletim de ocorrência oficial.
+              Informe a região e uma rua, um cruzamento ou trecho aproximado. Evite números de imóveis e dados pessoais. O período informado é aproximado e não substitui um boletim de ocorrência oficial.
             </p>
 
             {reportError && (
@@ -533,6 +551,32 @@ export default function Modals({
                   invalid={reportInvalidSelect === 'turno'}
                 />
               </div>
+            </div>
+
+            <div className="field">
+              <label htmlFor="report-location">Rua ou trecho de referência *</label>
+              <input
+                ref={locationInputRef}
+                id="report-location"
+                name="trecho"
+                type="text"
+                required
+                minLength={3}
+                maxLength={100}
+                autoComplete="off"
+                aria-describedby="report-location-help"
+                className={reportInvalidSelect === 'trecho' ? 'invalid' : ''}
+                value={reportLocation}
+                onChange={(e) => {
+                  setReportLocation(e.target.value);
+                  setReportError('');
+                  if (reportInvalidSelect === 'trecho') setReportInvalidSelect('');
+                }}
+                placeholder="Ex.: Rua dos Andradas, próximo ao cruzamento com a Rua X"
+              />
+              <p className="field-help" id="report-location-help">
+                Informe a rua, o cruzamento ou um trecho aproximado. Não inclua número do imóvel, nomes ou outros dados pessoais.
+              </p>
             </div>
 
             <div className="field">
@@ -650,6 +694,9 @@ export default function Modals({
                   <strong>6 ou mais:</strong> Atenção crítica
                 </li>
               </ul>
+            </div>
+            <div className="privacy-notice">
+              <strong>Lista de trechos:</strong> são exibidos apenas trechos com pelo menos 3 relatos elegíveis. A ordem considera a prioridade preventiva da categoria associada, o volume dessa categoria e, depois, o total de relatos. Essa ordem é operacional e não representa uma medição validada de perigo.
             </div>
             <div className="privacy-notice">
               <strong>Registros fora do indicador:</strong> relatos de ocorrências há mais de 90 dias e relatos sem período informado são contabilizados separadamente. Não entram na classificação nem nos percentuais por categoria.
