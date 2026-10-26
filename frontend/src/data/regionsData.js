@@ -2,17 +2,20 @@
  * CAMADA DE DADOS E CATÁLOGOS PADRONIZADOS (regionsData.js)
  * ---------------------------------------------------------
  * Mantém as opções predefinidas em estrita sincronia com o modelo Relato do Django:
- * - Bairros de Porto Alegre (RS)
- * - Categorias de percepção urbana
- * - Turnos de ocorrência (Manhã, Tarde, Noite, Madrugada)
- * - Períodos aproximados da ocorrência
+ * - Regiões de Porto Alegre (RS)
+ * - Categorias de relatos das usuárias
+ * - Turnos da ocorrência (Manhã, Tarde, Noite, Madrugada)
+ * - Períodos aproximados da ocorrência (faixas mutuamente exclusivas)
  *
  * Também define o estado inicial neutro ("Dados insuficientes" — cinza) para que a
  * interface nunca apresente níveis fictícios como se fossem dados reais do banco.
  */
 
 export const PERIODO_REFERENCIA_PADRAO =
-  'Últimos 90 dias (ocorrências estimadas em até 30 dias do registro)';
+  'Últimos 90 dias — período aproximado da ocorrência informado pela pessoa';
+
+const AVISO_LIMITACAO_PADRAO =
+  'Os indicadores refletem o volume de relatos elegíveis registrados. Eles não representam necessariamente ocorrências únicas nem estatísticas criminais oficiais. A ausência de relatos não garante segurança.';
 
 export const initialRegionsDB = {
   centro: {
@@ -22,6 +25,8 @@ export const initialRegionsDB = {
     lat: -30.0328,
     lng: -51.2300,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -30,8 +35,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   cidade: {
     id: 'cidade',
@@ -40,6 +44,8 @@ export const initialRegionsDB = {
     lat: -30.0400,
     lng: -51.2200,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -48,8 +54,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   menino: {
     id: 'menino',
@@ -58,6 +63,8 @@ export const initialRegionsDB = {
     lat: -30.0500,
     lng: -51.2250,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -66,8 +73,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   bom_fim: {
     id: 'bom_fim',
@@ -76,6 +82,8 @@ export const initialRegionsDB = {
     lat: -30.0335,
     lng: -51.2105,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -84,8 +92,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   moinhos: {
     id: 'moinhos',
@@ -94,6 +101,8 @@ export const initialRegionsDB = {
     lat: -30.0258,
     lng: -51.2045,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -102,8 +111,7 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
   praia_de_belas: {
     id: 'praia_de_belas',
@@ -112,6 +120,8 @@ export const initialRegionsDB = {
     lat: -30.0495,
     lng: -51.2315,
     quantidade_relatos: 0,
+    quantidade_anteriores_90_dias: 0,
+    quantidade_periodo_desconhecido: 0,
     quantidade_historicos_indeterminados: 0,
     estado_semantico: 'Dados insuficientes',
     cor_classe: 'gray',
@@ -120,12 +130,11 @@ export const initialRegionsDB = {
     periodo_referencia: PERIODO_REFERENCIA_PADRAO,
     categorias_registradas: [],
     turnos_registrados: [],
-    aviso_limitacao:
-      'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas dados insuficientes para classificação, nunca garantia de que a região seja segura.',
+    aviso_limitacao: AVISO_LIMITACAO_PADRAO,
   },
 };
 
-// 1. Bairros de Porto Alegre (RS) — sincronizados com Relato.RegiaoChoices no Django
+// 1. Regiões de Porto Alegre (RS) — sincronizadas com Relato.RegiaoChoices no Django
 export const regionOptions = [
   { value: 'centro', label: 'Centro Histórico' },
   { value: 'cidade', label: 'Cidade Baixa' },
@@ -135,13 +144,13 @@ export const regionOptions = [
   { value: 'praia_de_belas', label: 'Praia de Belas' },
 ];
 
-// 2. Categorias de ocorrência/percepção — sincronizadas com Relato.CategoriaChoices no Django
+// 2. Categorias de relato — sincronizadas com Relato.CategoriaChoices no Django
 export const typeOptions = [
   { value: 'iluminacao', label: 'Iluminação insuficiente' },
   { value: 'isolamento', label: 'Trecho isolado ou com pouca circulação' },
   { value: 'assedio', label: 'Assédio ou importunação' },
-  { value: 'transporte', label: 'Condição de ponto de transporte' },
-  { value: 'infraestrutura', label: 'Outro fator urbano' },
+  { value: 'transporte', label: 'Problema em ponto de transporte' },
+  { value: 'infraestrutura', label: 'Outro fator relacionado ao espaço urbano' },
 ];
 
 // 3. Turno da ocorrência — sincronizado com Relato.TurnoChoices no Django
@@ -152,11 +161,13 @@ export const shiftOptions = [
   { value: 'madrugada', label: 'Madrugada' },
 ];
 
-// 4. Período aproximado da ocorrência — sincronizado com Relato.PeriodoChoices no Django
+// 4. Período aproximado da ocorrência (faixas mutuamente exclusivas) — sincronizado com Relato.PeriodoChoices
 export const periodOptions = [
   { value: 'hoje', label: 'Hoje' },
-  { value: 'ultimos_7_dias', label: 'Nos últimos 7 dias' },
-  { value: 'ultimos_30_dias', label: 'Nos últimos 30 dias' },
-  { value: 'mais_de_30_dias', label: 'Há mais de 30 dias' },
+  { value: 'de_1_a_7_dias', label: 'De 1 a 7 dias atrás' },
+  { value: 'de_8_a_30_dias', label: 'De 8 a 30 dias atrás' },
+  { value: 'de_31_a_60_dias', label: 'De 31 a 60 dias atrás' },
+  { value: 'de_61_a_90_dias', label: 'De 61 a 90 dias atrás' },
+  { value: 'mais_de_90_dias', label: 'Há mais de 90 dias' },
   { value: 'nao_sei', label: 'Não sei informar' },
 ];

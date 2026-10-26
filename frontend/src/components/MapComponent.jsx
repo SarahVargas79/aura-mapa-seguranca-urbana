@@ -9,9 +9,17 @@ function MapInstanceBinder({ mapRef }) {
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, [map, mapRef]);
   return null;
 }
@@ -32,11 +40,16 @@ function createAuraPinIcon(region, isSelected) {
         <span class="aura-pin-core" style="background: ${pinColor};"></span>
         <span class="aura-pin-tag">${regionName}</span>
       </div>
-    `
+    `,
   });
 }
 
-export default function MapComponent({ regionsData, selectedRegionId, onSelectRegion }) {
+export default function MapComponent({
+  regionsData,
+  selectedRegionId,
+  onSelectRegion,
+  onShowToast,
+}) {
   const mapRef = useRef(null);
   const regionsList = Object.values(regionsData);
   const activeRegion = regionsData[selectedRegionId];
@@ -58,18 +71,23 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
     if (mapRef.current) {
       mapRef.current.flyTo(POA_DEFAULT_CENTER, POA_DEFAULT_ZOOM, { duration: 0.6 });
     }
+    if (onShowToast) {
+      onShowToast('Visualização do mapa restaurada para o Centro Histórico.', 'info');
+    }
   };
 
   const handleMarkerSelect = (region) => {
     onSelectRegion(region.id);
     if (mapRef.current) {
       const currentZoom = mapRef.current.getZoom();
-      mapRef.current.flyTo([region.lat, region.lng], Math.max(currentZoom, 14), { duration: 0.5 });
+      mapRef.current.flyTo([region.lat, region.lng], Math.max(currentZoom, 14), {
+        duration: 0.5,
+      });
     }
   };
 
   return (
-    <div className="map" role="region" aria-label="Mapa interativo em tempo real de Porto Alegre">
+    <div className="map" role="region" aria-label="Mapa interativo de Porto Alegre">
       <MapContainer
         center={POA_DEFAULT_CENTER}
         zoom={POA_DEFAULT_ZOOM}
@@ -107,7 +125,7 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
                     e.originalEvent.preventDefault();
                     handleMarkerSelect(reg);
                   }
-                }
+                },
               }}
             />
           );
@@ -119,20 +137,52 @@ export default function MapComponent({ regionsData, selectedRegionId, onSelectRe
       </div>
 
       <div className="mapcontrols" role="group" aria-label="Controles de visualização do mapa">
-        <button type="button" onClick={handleZoomIn} title="Aproximar mapa" aria-label="Aproximar mapa">＋</button>
-        <button type="button" onClick={handleZoomOut} title="Afastar mapa" aria-label="Afastar mapa">−</button>
-        <button type="button" onClick={handleReset} title="Restaurar visualização inicial" aria-label="Restaurar visualização inicial">↺</button>
+        <button
+          type="button"
+          id="btnZoomIn"
+          onClick={handleZoomIn}
+          title="Aproximar mapa"
+          aria-label="Aproximar mapa"
+        >
+          ＋
+        </button>
+        <button
+          type="button"
+          id="btnZoomOut"
+          onClick={handleZoomOut}
+          title="Afastar mapa"
+          aria-label="Afastar mapa"
+        >
+          −
+        </button>
+        <button
+          type="button"
+          id="btnMapReset"
+          onClick={handleReset}
+          title="Restaurar visualização inicial"
+          aria-label="Restaurar visualização inicial"
+        >
+          ↺
+        </button>
       </div>
 
-      <div className="maplegend" aria-label="Legenda de estados semânticos">
-        <strong>Estados semânticos</strong>
-        <div className="legendrow"><i className="swatch insufficient" aria-hidden="true"></i>Dados insuficientes</div>
-        <div className="legendrow"><i className="swatch attention" aria-hidden="true"></i>Atenção</div>
-        <div className="legendrow"><i className="swatch alert" aria-hidden="true"></i>Atenção elevada</div>
-        <div className="legendrow"><i className="swatch danger" aria-hidden="true"></i>Atenção crítica</div>
+      <div className="maplegend" aria-label="Legenda dos níveis do indicador">
+        <strong>Legenda do mapa</strong>
+        <div className="legendrow">
+          <i className="swatch insufficient" aria-hidden="true"></i>Dados insuficientes
+        </div>
+        <div className="legendrow">
+          <i className="swatch attention" aria-hidden="true"></i>Atenção
+        </div>
+        <div className="legendrow">
+          <i className="swatch alert" aria-hidden="true"></i>Atenção elevada
+        </div>
+        <div className="legendrow">
+          <i className="swatch danger" aria-hidden="true"></i>Atenção crítica
+        </div>
       </div>
 
-      <div className="map-note">
+      <div className="map-note" id="mapNote">
         Mapa interativo em tempo real. Arraste para explorar Porto Alegre e clique para consultar os registros da região.
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { initialRegionsDB, PERIODO_REFERENCIA_PADRAO } from './data/regionsData';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { initialRegionsDB } from './data/regionsData';
 import {
   api,
   getStoredToken,
@@ -23,7 +23,6 @@ import Modals from './components/Modals';
  */
 export default function App() {
   const [regionsData, setRegionsData] = useState(initialRegionsDB);
-  const [periodoReferencia, setPeriodoReferencia] = useState(PERIODO_REFERENCIA_PADRAO);
   const [apiConnected, setApiConnected] = useState(false);
 
   const [selectedRegionId, setSelectedRegionId] = useState('centro');
@@ -34,16 +33,31 @@ export default function App() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
-  const [toast, setToast] = useState({ visible: false, message: '' });
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'info' });
+  const toastTimerRef = useRef(null);
 
-  // Bairro pré-selecionado ao abrir o formulário de percepção
+  // Região pré-selecionada ao abrir o formulário de relato
   const [reportRegion, setReportRegion] = useState('centro');
 
   const region = regionsData[selectedRegionId] || regionsData.centro;
 
-  const showToast = useCallback((message) => {
-    setToast({ visible: true, message });
-    setTimeout(() => setToast({ visible: false, message: '' }), 4000);
+  const showToast = useCallback((message, type = 'info') => {
+    const validTypes = ['success', 'error', 'warning', 'info'];
+    const toastType = validTypes.includes(type) ? type : 'info';
+    setToast({ visible: true, message, type: toastType });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 4200);
+  }, []);
+
+  const highlightPanel = useCallback((elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.classList.add('panel-highlight');
+    setTimeout(() => {
+      el.classList.remove('panel-highlight');
+    }, 1800);
   }, []);
 
   // Consulta os indicadores calculados pelo motor do Django a partir do SQLite
@@ -52,9 +66,6 @@ export default function App() {
       const data = await api.getIndicadores();
       if (data && data.regioes) {
         setRegionsData(data.regioes);
-        if (data.periodo_referencia_padrao) {
-          setPeriodoReferencia(data.periodo_referencia_padrao);
-        }
         setApiConnected(true);
       }
     } catch {
@@ -66,13 +77,11 @@ export default function App() {
   useEffect(() => {
     let ativo = true;
 
-    api.getIndicadores()
+    api
+      .getIndicadores()
       .then((data) => {
         if (!ativo || !data?.regioes) return;
         setRegionsData(data.regioes);
-        if (data.periodo_referencia_padrao) {
-          setPeriodoReferencia(data.periodo_referencia_padrao);
-        }
         setApiConnected(true);
       })
       .catch(() => {
@@ -81,7 +90,8 @@ export default function App() {
 
     const token = getStoredToken();
     if (token) {
-      api.verificarSessao()
+      api
+        .verificarSessao()
         .then((res) => {
           if (ativo && res?.usuario) {
             setCurrentUser(res.usuario);
@@ -126,7 +136,7 @@ export default function App() {
     saveAuthSession(token, usuario);
     setCurrentUser(usuario);
     setActiveModal(null);
-    showToast(mensagem || `Sessão iniciada como ${usuario.identificador_aura}.`);
+    showToast(mensagem || `Acesso iniciado com sucesso, ${usuario.identificador_aura}.`, 'success');
   };
 
   const handleLogout = async () => {
@@ -138,13 +148,16 @@ export default function App() {
     clearAuthSession();
     setCurrentUser(null);
     setAccountPopoverOpen(false);
-    showToast('Sessão encerrada com sucesso.');
+    showToast('Você saiu da sua conta.', 'success');
   };
 
   const requireLogin = (modalName) => {
     if (currentUser) {
       if (modalName === 'community') {
-        showToast('O fórum comunitário estará disponível em etapa futura.');
+        showToast(
+          'Você está conectada ao AURA. Acesse as conversas entre usuárias.',
+          'success'
+        );
       } else {
         setReportRegion(selectedRegionId);
         setActiveModal(modalName);
@@ -159,25 +172,82 @@ export default function App() {
     if (regiaoRegistrada) {
       setSelectedRegionId(regiaoRegistrada);
     }
+    highlightPanel('panelDetalhesRegiao');
   };
 
-  const scrollToSupport = (toastMsg) => {
+  const scrollToSupport = (toastMsg, toastType) => {
     const el = document.getElementById('apoio');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-    if (toastMsg) showToast(toastMsg);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      highlightPanel('apoio');
+    }
+    if (toastMsg) {
+      const resolvedType =
+        toastType || (/urgente|emergência/i.test(toastMsg) ? 'warning' : 'info');
+      showToast(toastMsg, resolvedType);
+    }
+  };
+
+  const renderToastIcon = (type) => {
+    if (type === 'success') {
+      return (
+        <>
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </>
+      );
+    }
+    if (type === 'error') {
+      return (
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 8v4M12 16h.01" />
+        </>
+      );
+    }
+    if (type === 'warning') {
+      return (
+        <>
+          <path d="M10.3 3.9 1.8 18.2A2 2 0 0 0 3.5 21h17a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+          <path d="M12 9v4M12 17h.01" />
+        </>
+      );
+    }
+    return (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 11v5M12 7h.01" />
+      </>
+    );
   };
 
   return (
     <>
-      <a className="skip-link" href="#conteudo">Pular para o conteúdo principal</a>
-      
-      {/* Notificação Flutuante Acessível */}
-      <div className={`toast-container ${toast.visible ? 'show' : ''}`} role="status" aria-live="polite" aria-atomic="true">
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
+      <a className="skip-link" href="#conteudo">
+        Pular para o conteúdo principal
+      </a>
+
+      {/* Notificação Flutuante Acessível (Toast) */}
+      <div
+        id="toast"
+        className={`toast-container toast-${toast.type} ${toast.visible ? 'show' : ''}`}
+        role={toast.type === 'error' ? 'alert' : 'status'}
+        aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+        aria-atomic="true"
+      >
+        <svg
+          id="toastIcon"
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          {renderToastIcon(toast.type)}
         </svg>
-        {toast.message}
+        <span id="toastMessage">{toast.message}</span>
       </div>
 
       {/* Cabeçalho, Navegação Mobile, Painel de Acessibilidade e Popover de Conta */}
@@ -195,7 +265,13 @@ export default function App() {
         currentUser={currentUser}
         onOpenAuthModal={() => setActiveModal('auth')}
         onLogout={handleLogout}
-        onHelpClick={() => scrollToSupport('Canais oficiais de apoio: Ligue 180 ou 190 em caso de emergência.')}
+        onHelpClick={() =>
+          scrollToSupport(
+            'Canais oficiais de apoio: Ligue 180 ou 190 em caso de emergência.',
+            'warning'
+          )
+        }
+        onShowToast={showToast}
       />
 
       <main id="conteudo">
@@ -205,27 +281,43 @@ export default function App() {
             <p className="eyebrow">Porto Alegre · prevenção e informação</p>
             <h1>Seu caminho, com mais informação.</h1>
             <p className="hero-copy">
-              Consulte indicadores de percepção comunitária no território e encontre orientações de apoio para seus deslocamentos.
+              Consulte indicadores de percepção das usuárias sobre o território e encontre orientações de apoio para seus deslocamentos.
             </p>
             <div className="hero-actions">
-              <button type="button" className="btn primary" onClick={() => requireLogin('report')}>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M12 5v14M5 12h14"/>
+              <button
+                type="button"
+                className="btn primary"
+                id="btnHeroReport"
+                onClick={() => requireLogin('report')}
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <path d="M12 5v14M5 12h14" />
                 </svg>
-                Compartilhar percepção
+                Compartilhar relato
               </button>
               <button
                 type="button"
                 className="btn secondary"
-                onClick={() =>
-                  showToast(
-                    'Os estados semânticos refletem o volume de relatos elegíveis nos últimos 90 dias (0 = Dados insuficientes; 1–2 = Atenção; 3–5 = Atenção elevada; 6+ = Atenção crítica).'
-                  )
-                }
+                id="btnHowItWorks"
+                onClick={() => setActiveModal('how')}
               >
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                  <circle cx="12" cy="12" r="9"/>
-                  <path d="M9.8 9a2.3 2.3 0 1 1 3.9 1.6c-1.1 1-1.7 1.2-1.7 2.7M12 16.5h.01"/>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M9.8 9a2.3 2.3 0 1 1 3.9 1.6c-1.1 1-1.7 1.2-1.7 2.7M12 16.5h.01" />
                 </svg>
                 Como funciona
               </button>
@@ -236,7 +328,7 @@ export default function App() {
         {/* Seção Principal: Mapa Interativo de POA + Detalhes da Região */}
         <section id="mapa" aria-label="Mapa preventivo e detalhes regionais">
           <div className="layout">
-            <section className="panel">
+            <section className="panel" id="panelMapa">
               <div className="panelhead">
                 <div className="panelhead-main">
                   <h2>Mapa urbano preventivo</h2>
@@ -255,10 +347,13 @@ export default function App() {
                     setSelectedRegionId(regId);
                     setReportRegion(regId);
                   }}
+                  onShowToast={showToast}
                 />
                 <div className="map-foot">
-                  <span>◉ <strong>Janela de referência:</strong> {periodoReferencia}.</span>
-                  <span>Critérios operacionais baseados no volume de relatos elegíveis.</span>
+                  <span>
+                    ◉ <strong>Janela de referência:</strong> Últimos 90 dias, considerando o período aproximado da ocorrência informado no relato.
+                  </span>
+                  <span>Classificação baseada no volume de relatos elegíveis.</span>
                 </div>
               </div>
             </section>
@@ -272,28 +367,45 @@ export default function App() {
           onScrollToSupport={scrollToSupport}
           onShowToast={showToast}
           onRequireLogin={requireLogin}
+          onOpenPrivacyModal={() => setActiveModal('privacy')}
         />
       </main>
 
       <footer className="footer">
         <div className="footer-inner">
-          <span>© AURA · Mapa de Segurança Urbana para Mulheres · Projeto acadêmico</span>
+          <span>© AURA · Mapa de Segurança Urbana para Mulheres</span>
           <span className="footer-links">
-            <a href="#apoio">Canais de apoio</a>
             <a
-              href="#privacidade"
+              href="#apoio"
+              id="linkFooterSupport"
               onClick={(e) => {
                 e.preventDefault();
-                showToast('O AURA utiliza apenas identificador de usuário e região aproximada, sem exigir nome civil ou e-mail.');
+                scrollToSupport('Canais oficiais destacados: Ligue 180 e Emergência 190.', 'info');
+              }}
+            >
+              Canais de apoio
+            </a>
+            <a
+              href="#privacidade"
+              id="linkFooterPrivacy"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveModal('privacy');
               }}
             >
               Privacidade
             </a>
             <a
-              href="#acessibilidade"
+              href="#painel-acessibilidade"
+              id="linkFooterAccess"
               onClick={(e) => {
                 e.preventDefault();
                 setAccessPanelOpen(true);
+                setAccountPopoverOpen(false);
+                setTimeout(() => {
+                  document.getElementById('btnToggleTheme')?.focus();
+                }, 20);
+                showToast('Painel de acessibilidade aberto.', 'info');
               }}
             >
               Acessibilidade
@@ -302,7 +414,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Modais de Autenticação e Compartilhamento de Percepção */}
+      {/* Modais: Área de Acesso, Compartilhar Relato, Como Funciona e Privacidade */}
       <Modals
         activeModal={activeModal}
         onCloseModal={() => setActiveModal(null)}

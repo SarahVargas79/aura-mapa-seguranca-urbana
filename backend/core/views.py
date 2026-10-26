@@ -13,14 +13,15 @@ from .serializers import CadastroAuraSerializer, LoginAuraSerializer, RelatoSeri
 
 def classificar_volume_relatos(quantidade_elegivel: int) -> dict:
     """
-    Aplica as regras operacionais provisórias do AURA para classificar o volume
-    de relatos elegíveis na janela temporal de referência.
+    Aplica as regras operacionais do AURA para classificar o volume
+    de relatos elegíveis na janela temporal de referência (90 dias).
 
-    Importante (Documentação Acadêmica):
-    - Estas faixas são critérios operacionais provisórios baseados no volume de relatos,
-      não constituindo metodologia cientificamente validada de risco urbano.
-    - A ausência de relatos (0) resulta em 'Dados insuficientes' (cinza), nunca em 'Baixa atenção'
+    Observações:
+    - 0 relatos elegíveis resulta em 'Dados insuficientes' (cinza), nunca em 'Baixa atenção'
       ou garantia de local seguro.
+    - 1 a 2 relatos: 'Atenção' (amarelo)
+    - 3 a 5 relatos: 'Atenção elevada' (laranja)
+    - 6 ou mais relatos: 'Atenção crítica' (vermelho)
     """
     if quantidade_elegivel <= 0:
         return {
@@ -65,7 +66,7 @@ class CadastroAuraView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             return Response(
                 {
-                    'mensagem': 'Identificador AURA cadastrado com sucesso.',
+                    'mensagem': f'Identificador AURA criado com sucesso: {user.username}.',
                     'token': token.key,
                     'usuario': {
                         'id': user.id,
@@ -91,7 +92,7 @@ class LoginAuraView(APIView):
             token, _ = Token.objects.get_or_create(user=user)
             return Response(
                 {
-                    'mensagem': 'Sessão iniciada com sucesso.',
+                    'mensagem': f'Acesso iniciado com sucesso, {user.username}.',
                     'token': token.key,
                     'usuario': {
                         'id': user.id,
@@ -114,7 +115,7 @@ class LogoutAuraView(APIView):
         if request.auth:
             request.auth.delete()
         return Response(
-            {'mensagem': 'Sessão encerrada com sucesso.'},
+            {'mensagem': 'Você saiu da sua conta.'},
             status=status.HTTP_200_OK,
         )
 
@@ -152,7 +153,7 @@ class RelatoCreateView(APIView):
             relato = serializer.save(autor=request.user)
             return Response(
                 {
-                    'mensagem': 'Relato registrado com sucesso.',
+                    'mensagem': 'Relato registrado com sucesso. Os indicadores da região foram atualizados.',
                     'relato': RelatoSerializer(relato).data,
                 },
                 status=status.HTTP_201_CREATED,
@@ -163,41 +164,52 @@ class RelatoCreateView(APIView):
 class IndicadoresView(APIView):
     """
     GET /api/indicadores/
-    Motor de cálculo dos indicadores semânticos por região diretamente a partir do SQLite.
+    Motor de cálculo dos indicadores por região diretamente a partir do SQLite.
 
     Regra de inclusão na janela temporal de 90 dias:
     - Considera elegíveis para o indicador principal apenas os relatos enviados nos últimos 90 dias
-      (data_registro >= agora - 90 dias) E cujo período aproximado informado pela usuária seja
-      'hoje', 'ultimos_7_dias' ou 'ultimos_30_dias'.
-    - Relatos marcados como 'mais_de_30_dias' ("Há mais de 30 dias") ou 'nao_sei' ("Não sei informar"),
-      bem como registros anteriores a 90 dias, não possuem data de ocorrência delimitada dentro da
-      janela de 90 dias e, portanto, são contabilizados separadamente como registros históricos ou
-      de período indeterminado.
+      (data_registro >= agora - 90 dias) E cujo período aproximado informado pela usuária esteja
+      entre 'hoje' e 'de_61_a_90_dias'.
+    - Relatos marcados como 'mais_de_90_dias' (ou com data_registro anterior a 90 dias) e relatos
+      marcados como 'nao_sei' são contabilizados separadamente e não entram na classificação
+      nem nos percentuais por categoria.
     """
     permission_classes = [AllowAny]
 
     def get(self, request):
         agora = timezone.now()
         limite_90_dias = agora - timedelta(days=90)
-        periodo_referencia_texto = 'Últimos 90 dias (ocorrências estimadas em até 30 dias do registro)'
+        periodo_referencia_texto = (
+            'Últimos 90 dias — período aproximado da ocorrência informado pela pessoa'
+        )
 
-        # 1. Relatos elegíveis para o cálculo do indicador principal
+        # 1. Relatos elegíveis para o cálculo do indicador principal (janela de 90 dias)
         qs_elegiveis = Relato.objects.filter(
             data_registro__gte=limite_90_dias,
             periodo_ocorrencia__in=Relato.PERIODOS_ELEGIVEIS_JANELA,
         )
 
-        # 2. Relatos históricos ou de período indeterminado (fora da janela ou sem faixa delimitada)
-        qs_indeterminados = Relato.objects.exclude(
+        # 2. Relatos sem período informado
+        qs_periodo_desconhecido = Relato.objects.filter(
+            periodo_ocorrencia=Relato.PeriodoChoices.NAO_SEI,
+        )
+
+        # 3. Relatos sobre ocorrências há mais de 90 dias (pelo período informado ou pela data do registro)
+        qs_anteriores_90_dias = Relato.objects.exclude(
             id__in=qs_elegiveis.values_list('id', flat=True)
+        ).exclude(
+            id__in=qs_periodo_desconhecido.values_list('id', flat=True)
         )
 
         # Contagem agregada no banco por região (evita N+1 queries e contagens duplicadas)
         contagem_elegiveis_por_regiao = dict(
             qs_elegiveis.values_list('regiao').annotate(total=Count('id'))
         )
-        contagem_indeterminados_por_regiao = dict(
-            qs_indeterminados.values_list('regiao').annotate(total=Count('id'))
+        contagem_anteriores_por_regiao = dict(
+            qs_anteriores_90_dias.values_list('regiao').annotate(total=Count('id'))
+        )
+        contagem_desconhecidos_por_regiao = dict(
+            qs_periodo_desconhecido.values_list('regiao').annotate(total=Count('id'))
         )
 
         # Contagem de categorias e turnos dentro dos relatos elegíveis por região
@@ -237,35 +249,22 @@ class IndicadoresView(APIView):
 
         for reg_id, meta in REGIOES_POA_METADATA.items():
             qtd_elegivel = contagem_elegiveis_por_regiao.get(reg_id, 0)
-            qtd_indeterminada = contagem_indeterminados_por_regiao.get(reg_id, 0)
+            qtd_anterior_90_dias = contagem_anteriores_por_regiao.get(reg_id, 0)
+            qtd_periodo_desconhecido = contagem_desconhecidos_por_regiao.get(reg_id, 0)
+            qtd_indeterminada = qtd_anterior_90_dias + qtd_periodo_desconhecido
             classificacao = classificar_volume_relatos(qtd_elegivel)
             lista_categorias = categorias_por_regiao.get(reg_id, [])
             lista_turnos = turnos_por_regiao.get(reg_id, [])
 
-            # Construção de avisos de limitação transparentes e sem contradições
             avisos = []
-            if qtd_elegivel == 0:
-                avisos.append(
-                    'Não há relatos elegíveis no período de referência. A ausência de registros indica apenas '
-                    'dados insuficientes para classificação, nunca garantia de que a região seja segura.'
-                )
-            elif qtd_elegivel <= 2:
-                avisos.append(
-                    'Volume reduzido de relatos no período de referência. Considere os dados como indicativos '
-                    'preliminares de percepção comunitária.'
-                )
-
-            if qtd_indeterminada > 0:
-                avisos.append(
-                    f'Há {qtd_indeterminada} registro(s) adicional(is) classificado(s) como "Há mais de 30 dias" '
-                    f'ou "Não sei informar" (ou fora da janela de 90 dias), mantido(s) separadamente para não '
-                    f'distorcer o indicador temporal.'
-                )
-
-            aviso_limitacao = ' '.join(avisos) if avisos else (
-                'Indicador operacional baseado no volume de relatos comunitários elegíveis nos últimos 90 dias. '
-                'Não representa estatística criminal oficial nem avaliação cientificamente validada de risco.'
+            if 0 < qtd_elegivel <= 2:
+                avisos.append('Há poucos relatos elegíveis; interprete o resultado com cautela.')
+            avisos.append(
+                'Os indicadores refletem o volume de relatos elegíveis registrados. '
+                'Eles não representam necessariamente ocorrências únicas nem estatísticas criminais oficiais. '
+                'A ausência de relatos não garante segurança.'
             )
+            aviso_limitacao = ' '.join(avisos)
 
             regioes_resposta[reg_id] = {
                 'id': reg_id,
@@ -274,6 +273,8 @@ class IndicadoresView(APIView):
                 'lat': meta['lat'],
                 'lng': meta['lng'],
                 'quantidade_relatos': qtd_elegivel,
+                'quantidade_anteriores_90_dias': qtd_anterior_90_dias,
+                'quantidade_periodo_desconhecido': qtd_periodo_desconhecido,
                 'quantidade_historicos_indeterminados': qtd_indeterminada,
                 'estado_semantico': classificacao['estado_semantico'],
                 'cor_classe': classificacao['cor_classe'],
@@ -290,8 +291,7 @@ class IndicadoresView(APIView):
                 'periodo_referencia_padrao': periodo_referencia_texto,
                 'nota_metodologica': (
                     'As faixas de classificação (0 = Dados insuficientes; 1–2 = Atenção; 3–5 = Atenção elevada; '
-                    '6+ = Atenção crítica) são critérios operacionais provisórios baseados no volume de relatos '
-                    'elegíveis e não constituem metodologia cientificamente validada de avaliação de risco urbano.'
+                    '6+ = Atenção crítica) baseiam-se no volume de relatos elegíveis nos últimos 90 dias.'
                 ),
                 'regioes': regioes_resposta,
             },

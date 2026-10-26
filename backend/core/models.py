@@ -73,8 +73,8 @@ class Relato(models.Model):
         ILUMINACAO = 'iluminacao', 'Iluminação insuficiente'
         ISOLAMENTO = 'isolamento', 'Trecho isolado ou com pouca circulação'
         ASSEDIO = 'assedio', 'Assédio ou importunação'
-        TRANSPORTE = 'transporte', 'Condição de ponto de transporte'
-        INFRAESTRUTURA = 'infraestrutura', 'Outro fator urbano'
+        TRANSPORTE = 'transporte', 'Problema em ponto de transporte'
+        INFRAESTRUTURA = 'infraestrutura', 'Outro fator relacionado ao espaço urbano'
 
     class TurnoChoices(models.TextChoices):
         MANHA = 'manha', 'Manhã'
@@ -84,16 +84,20 @@ class Relato(models.Model):
 
     class PeriodoChoices(models.TextChoices):
         HOJE = 'hoje', 'Hoje'
-        ULTIMOS_7_DIAS = 'ultimos_7_dias', 'Nos últimos 7 dias'
-        ULTIMOS_30_DIAS = 'ultimos_30_dias', 'Nos últimos 30 dias'
-        MAIS_DE_30_DIAS = 'mais_de_30_dias', 'Há mais de 30 dias'
+        DE_1_A_7_DIAS = 'de_1_a_7_dias', 'De 1 a 7 dias atrás'
+        DE_8_A_30_DIAS = 'de_8_a_30_dias', 'De 8 a 30 dias atrás'
+        DE_31_A_60_DIAS = 'de_31_a_60_dias', 'De 31 a 60 dias atrás'
+        DE_61_A_90_DIAS = 'de_61_a_90_dias', 'De 61 a 90 dias atrás'
+        MAIS_DE_90_DIAS = 'mais_de_90_dias', 'Há mais de 90 dias'
         NAO_SEI = 'nao_sei', 'Não sei informar'
 
-    # Faixas que permitem confirmar com segurança que a situação ocorreu dentro da janela de 90 dias
+    # Faixas mutuamente exclusivas dentro da janela de referência de 90 dias
     PERIODOS_ELEGIVEIS_JANELA = (
         PeriodoChoices.HOJE,
-        PeriodoChoices.ULTIMOS_7_DIAS,
-        PeriodoChoices.ULTIMOS_30_DIAS,
+        PeriodoChoices.DE_1_A_7_DIAS,
+        PeriodoChoices.DE_8_A_30_DIAS,
+        PeriodoChoices.DE_31_A_60_DIAS,
+        PeriodoChoices.DE_61_A_90_DIAS,
     )
 
     autor = models.ForeignKey(

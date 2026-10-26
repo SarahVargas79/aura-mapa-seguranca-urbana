@@ -44,7 +44,7 @@ class AuraFullStackTests(TestCase):
             'regiao': 'centro',
             'categoria': 'iluminacao',
             'turno_ocorrencia': 'noite',
-            'periodo_ocorrencia': 'ultimos_7_dias',
+            'periodo_ocorrencia': 'de_1_a_7_dias',
             'descricao_objetiva': 'Poste apagado próximo à parada.',
         }
         # Sem token deve retornar 401
@@ -93,15 +93,21 @@ class AuraFullStackTests(TestCase):
         self.assertEqual(resp1.data['regioes']['centro']['estado_semantico'], 'Atenção')
         self.assertEqual(resp1.data['regioes']['centro']['cor_classe'], 'yellow')
 
-        # 3 relatos elegíveis -> Atenção elevada (orange)
-        for _ in range(2):
-            Relato.objects.create(
-                autor=user,
-                regiao='centro',
-                categoria='isolamento',
-                turno_ocorrencia='madrugada',
-                periodo_ocorrencia='ultimos_30_dias',
-            )
+        # 3 relatos elegíveis (incluindo faixas de 31 a 60 e 61 a 90 dias) -> Atenção elevada (orange)
+        Relato.objects.create(
+            autor=user,
+            regiao='centro',
+            categoria='isolamento',
+            turno_ocorrencia='madrugada',
+            periodo_ocorrencia='de_31_a_60_dias',
+        )
+        Relato.objects.create(
+            autor=user,
+            regiao='centro',
+            categoria='isolamento',
+            turno_ocorrencia='madrugada',
+            periodo_ocorrencia='de_61_a_90_dias',
+        )
         resp3 = self.client.get('/api/indicadores/')
         self.assertEqual(resp3.data['regioes']['centro']['quantidade_relatos'], 3)
         self.assertEqual(resp3.data['regioes']['centro']['estado_semantico'], 'Atenção elevada')
@@ -114,7 +120,7 @@ class AuraFullStackTests(TestCase):
                 regiao='centro',
                 categoria='assedio',
                 turno_ocorrencia='noite',
-                periodo_ocorrencia='ultimos_7_dias',
+                periodo_ocorrencia='de_8_a_30_dias',
             )
         resp6 = self.client.get('/api/indicadores/')
         self.assertEqual(resp6.data['regioes']['centro']['quantidade_relatos'], 6)
@@ -123,18 +129,18 @@ class AuraFullStackTests(TestCase):
 
     def test_filtro_temporal_separa_historicos_e_indeterminados(self):
         """
-        Garante que relatos 'mais_de_30_dias', 'nao_sei' ou com data_registro > 90 dias
+        Garante que relatos 'mais_de_90_dias', 'nao_sei' ou com data_registro > 90 dias
         não inflem o indicador principal e sejam contabilizados separadamente.
         """
         user = User.objects.create_user(username='temporal_tester', password='SenhaSegura123')
 
-        # Relato com 'mais_de_30_dias'
+        # Relato com 'mais_de_90_dias'
         Relato.objects.create(
             autor=user,
             regiao='cidade',
             categoria='iluminacao',
             turno_ocorrencia='noite',
-            periodo_ocorrencia='mais_de_30_dias',
+            periodo_ocorrencia='mais_de_90_dias',
         )
         # Relato com 'nao_sei'
         Relato.objects.create(
@@ -159,6 +165,60 @@ class AuraFullStackTests(TestCase):
         resp = self.client.get('/api/indicadores/')
         cidade = resp.data['regioes']['cidade']
         self.assertEqual(cidade['quantidade_relatos'], 0)
+        self.assertEqual(cidade['quantidade_anteriores_90_dias'], 2)
+        self.assertEqual(cidade['quantidade_periodo_desconhecido'], 1)
         self.assertEqual(cidade['quantidade_historicos_indeterminados'], 3)
+        self.assertEqual(cidade['categorias_registradas'], [])
         self.assertEqual(cidade['estado_semantico'], 'Dados insuficientes')
         self.assertEqual(cidade['cor_classe'], 'gray')
+
+    def test_coerencia_categorias_e_validacoes_formulario(self):
+        """
+        Verifica que apenas relatos elegíveis compõem as categorias registradas
+        e testa as mensagens de validação de cadastro e relato.
+        """
+        # Teste de validação de identificador fora do padrão (menos de 3 caracteres)
+        resp_invalido = self.client.post(
+            '/api/auth/cadastro/',
+            {'identificador_aura': 'ab', 'senha': 'SenhaSegura123'},
+            format='json',
+        )
+        self.assertEqual(resp_invalido.status_code, 400)
+
+        user = User.objects.create_user(username='usuaria_teste', password='SenhaSegura123')
+        self.client.force_authenticate(user=user)
+
+        # Relato elegível (de_1_a_7_dias)
+        self.client.post(
+            '/api/relatos/',
+            {
+                'regiao': 'bom_fim',
+                'categoria': 'transporte',
+                'turno_ocorrencia': 'noite',
+                'periodo_ocorrencia': 'de_1_a_7_dias',
+            },
+            format='json',
+        )
+        # Relato fora da janela (mais_de_90_dias) não deve entrar nas categorias do período
+        self.client.post(
+            '/api/relatos/',
+            {
+                'regiao': 'bom_fim',
+                'categoria': 'assedio',
+                'turno_ocorrencia': 'tarde',
+                'periodo_ocorrencia': 'mais_de_90_dias',
+            },
+            format='json',
+        )
+
+        resp = self.client.get('/api/indicadores/')
+        bom_fim = resp.data['regioes']['bom_fim']
+        self.assertEqual(bom_fim['quantidade_relatos'], 1)
+        self.assertEqual(bom_fim['quantidade_anteriores_90_dias'], 1)
+        self.assertEqual(len(bom_fim['categorias_registradas']), 1)
+        self.assertEqual(bom_fim['categorias_registradas'][0]['id'], 'transporte')
+        self.assertEqual(
+            bom_fim['categorias_registradas'][0]['rotulo'],
+            'Problema em ponto de transporte',
+        )
+        self.assertEqual(bom_fim['categorias_registradas'][0]['quantidade'], 1)

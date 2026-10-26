@@ -14,13 +14,13 @@ class CadastroAuraSerializer(serializers.Serializer):
     """
     identificador_aura = serializers.CharField(
         min_length=3,
-        max_length=40,
+        max_length=30,
         trim_whitespace=True,
         error_messages={
-            'required': 'Informe um identificador AURA.',
-            'blank': 'O identificador AURA não pode ficar em branco.',
-            'min_length': 'O identificador AURA deve ter pelo menos 3 caracteres.',
-            'max_length': 'O identificador AURA deve ter no máximo 40 caracteres.',
+            'required': 'Preencha seu identificador AURA e sua senha.',
+            'blank': 'Preencha seu identificador AURA e sua senha.',
+            'min_length': 'O identificador AURA deve ter entre 3 e 30 caracteres (letras, números, _, . ou -).',
+            'max_length': 'O identificador AURA deve ter entre 3 e 30 caracteres (letras, números, _, . ou -).',
         }
     )
     senha = serializers.CharField(
@@ -28,9 +28,9 @@ class CadastroAuraSerializer(serializers.Serializer):
         min_length=6,
         max_length=128,
         error_messages={
-            'required': 'Informe uma senha.',
-            'blank': 'A senha não pode ficar em branco.',
-            'min_length': 'A senha deve ter pelo menos 6 caracteres.',
+            'required': 'Preencha seu identificador AURA e sua senha.',
+            'blank': 'Preencha seu identificador AURA e sua senha.',
+            'min_length': 'A senha deve conter pelo menos 6 caracteres.',
         }
     )
 
@@ -38,7 +38,7 @@ class CadastroAuraSerializer(serializers.Serializer):
         identificador = value.strip()
         if not re.match(r'^[a-zA-Z0-9_.-]+$', identificador):
             raise serializers.ValidationError(
-                'Use apenas letras, números, ponto (.), hífen (-) ou sublinhado (_), sem espaços.'
+                'O identificador AURA deve ter entre 3 e 30 caracteres (letras, números, _, . ou -).'
             )
         if User.objects.filter(username__iexact=identificador).exists():
             raise serializers.ValidationError(
@@ -62,15 +62,15 @@ class LoginAuraSerializer(serializers.Serializer):
     identificador_aura = serializers.CharField(
         trim_whitespace=True,
         error_messages={
-            'required': 'Informe seu identificador AURA.',
-            'blank': 'Informe seu identificador AURA.',
+            'required': 'Preencha seu identificador AURA e sua senha.',
+            'blank': 'Preencha seu identificador AURA e sua senha.',
         }
     )
     senha = serializers.CharField(
         write_only=True,
         error_messages={
-            'required': 'Informe sua senha.',
-            'blank': 'Informe sua senha.',
+            'required': 'Preencha seu identificador AURA e sua senha.',
+            'blank': 'Preencha seu identificador AURA e sua senha.',
         }
     )
 
@@ -126,26 +126,26 @@ class RelatoSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'regiao': {
                 'error_messages': {
-                    'required': 'Selecione um bairro da lista.',
-                    'invalid_choice': 'Selecione um bairro válido de Porto Alegre.',
+                    'required': 'Selecione o bairro ou a região.',
+                    'invalid_choice': 'Selecione o bairro ou a região.',
                 }
             },
             'categoria': {
                 'error_messages': {
-                    'required': 'Selecione uma categoria de percepção.',
-                    'invalid_choice': 'Selecione uma categoria válida.',
+                    'required': 'Selecione uma categoria para o relato.',
+                    'invalid_choice': 'Selecione uma categoria para o relato.',
                 }
             },
             'turno_ocorrencia': {
                 'error_messages': {
-                    'required': 'Selecione o turno da ocorrência.',
-                    'invalid_choice': 'Selecione um turno válido (Manhã, Tarde, Noite ou Madrugada).',
+                    'required': 'Selecione o turno aproximado da ocorrência.',
+                    'invalid_choice': 'Selecione o turno aproximado da ocorrência.',
                 }
             },
             'periodo_ocorrencia': {
                 'error_messages': {
-                    'required': 'Selecione o período aproximado da ocorrência.',
-                    'invalid_choice': 'Selecione um período aproximado válido.',
+                    'required': 'Informe o período aproximado da ocorrência.',
+                    'invalid_choice': 'Informe o período aproximado da ocorrência.',
                 }
             },
         }
