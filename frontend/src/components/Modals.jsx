@@ -20,6 +20,8 @@ import { api } from '../services/api';
  *    - Explica a janela de referência de 90 dias, as faixas de classificação, a lista de trechos e os registros separados.
  * 4. Modal "Privacidade no AURA" (privacy):
  *    - Concentra as informações sobre uso dos dados, localização aproximada e cadastro.
+ * 5. Modal "Acolhimento e confiança" (community):
+ *    - Orientações gerais de apoio mútuo e rede de confiança (somente leitura).
  */
 export default function Modals({
   activeModal,
@@ -55,6 +57,7 @@ export default function Modals({
   const reportModalRef = useRef(null);
   const howModalRef = useRef(null);
   const privacyModalRef = useRef(null);
+  const communityModalRef = useRef(null);
 
   const authIdInputRef = useRef(null);
   const authPassInputRef = useRef(null);
@@ -88,6 +91,7 @@ export default function Modals({
         report: reportModalRef.current,
         how: howModalRef.current,
         privacy: privacyModalRef.current,
+        community: communityModalRef.current,
       };
       const currentModalEl = modalMap[activeModal];
       const closeBtn = currentModalEl?.querySelector('.close-modal');
@@ -106,7 +110,7 @@ export default function Modals({
         if (e.key !== 'Tab' || !currentModalEl) return;
         const focusable = Array.from(
           currentModalEl.querySelectorAll(
-            'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
           )
         ).filter((el) => !el.closest('[hidden]'));
         if (!focusable.length) return;
@@ -772,6 +776,149 @@ export default function Modals({
             <div className="form-actions">
               <button type="button" className="btn primary" onClick={handleClose}>
                 Entendi
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* MODAL 5: APOIO MÚTUO — ORIENTAÇÕES SOMENTE PARA LEITURA */}
+      <div
+        id="modalCommunityBackdrop"
+        className={`modal-backdrop ${activeModal === 'community' ? 'open' : ''}`}
+        role="presentation"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) handleClose();
+        }}
+      >
+        <section
+          ref={communityModalRef}
+          className="modal wide community-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-community-title"
+          aria-describedby="community-pilot-note"
+        >
+          <div className="modal-head">
+            <div className="modal-title-wrap">
+              <span className="modal-title-icon" aria-hidden="true">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20.8 8.7c0 5-8.8 10.4-8.8 10.4S3.2 13.7 3.2 8.7A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.5Z" />
+                  <path d="M8.5 12.5 11 15l4.8-5" />
+                </svg>
+              </span>
+              <div>
+                <h2 id="modal-community-title">Acolhimento e confiança</h2>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="close-modal"
+              onClick={handleClose}
+              aria-label="Fechar orientações de apoio mútuo"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="modal-content">
+            <div className="community-pilot-note" id="community-pilot-note">
+              <svg
+                className="community-pilot-icon"
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 11v5M12 8h.01" />
+              </svg>
+              <p>
+                Este espaço reúne orientações gerais de acolhimento. Não recebe relatos ou publicações e não oferece atendimento individual.
+              </p>
+            </div>
+
+            <div className="community-guide-list">
+              <details className="community-guide">
+                <summary>Como apoiar alguém sem pressioná-la?</summary>
+                <div className="community-guide-body">
+                  <p>
+                    Uma escuta acolhedora envolve ouvir com empatia, sem julgamentos. Procure não minimizar o que ela conta, culpá-la ou fazer perguntas que possam soar como acusações.
+                  </p>
+                  <ul>
+                    <li>
+                      Escute com atenção e deixe que ela compartilhe apenas o que se sentir confortável em contar.
+                    </li>
+                    <li>
+                      Você pode demonstrar apoio com frases como “Estou aqui com você” ou “A culpa não é sua”.
+                    </li>
+                    <li>
+                      Respeite o tempo e as decisões dela. Se fizer sentido, ofereça possibilidades de apoio, sem pressioná-la a escolher ou agir naquele momento.
+                    </li>
+                  </ul>
+                  <p>
+                    Se ela desejar e for seguro, você pode se oferecer para acompanhá-la na busca por um serviço de atendimento especializado.
+                  </p>
+                </div>
+              </details>
+
+              <details className="community-guide">
+                <summary>Como pedir apoio no seu próprio ritmo?</summary>
+                <div className="community-guide-body">
+                  <p>
+                    Buscar apoio não exige contar tudo de uma vez nem tomar uma decisão imediata. Você pode começar falando sobre o tipo de apoio que gostaria de receber, compartilhando apenas o que se sentir confortável em contar.
+                  </p>
+                  <ul>
+                    <li>
+                      Se se sentir à vontade, você pode dizer do que precisa naquele momento, como ser ouvida, ter companhia ou receber ajuda para encontrar um serviço.
+                    </li>
+                    <li>
+                      Você pode pausar ou encerrar uma conversa se não se sentir respeitada.
+                    </li>
+                    <li>
+                      Procure alguém de confiança e escolha o momento e o meio de contato que sejam seguros para você.
+                    </li>
+                  </ul>
+                  <p>
+                    Essas sugestões buscam respeitar o tempo, os limites e as decisões de cada mulher, sem pressioná-la a compartilhar mais do que deseja ou a tomar decisões antes de se sentir preparada.
+                  </p>
+                </div>
+              </details>
+
+              <details className="community-guide">
+                <summary>Como construir uma rede de confiança?</summary>
+                <div className="community-guide-body">
+                  <p>
+                    Uma rede de apoio pode incluir pessoas de confiança e serviços especializados. Se a pessoa desejar e isso for seguro, você pode se colocar à disposição para acompanhá-la a uma unidade de saúde, a um Centro de Referência de Atendimento à Mulher ou a uma Delegacia Especializada de Atendimento à Mulher.
+                  </p>
+                  <ul>
+                    <li>
+                      Converse com ela sobre que tipo de apoio seria bem-vindo, sem presumir do que ela precisa.
+                    </li>
+                    <li>
+                      Respeite sua privacidade: não compartilhe o relato nem divulgue informações pessoais sem sua autorização.
+                    </li>
+                    <li>
+                      Você não precisa ter todas as respostas. Buscar apoio de outras pessoas de confiança ou de serviços especializados pode ajudar a encontrar orientações e atendimento adequados.
+                    </li>
+                  </ul>
+                </div>
+              </details>
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="btn secondary" onClick={handleClose}>
+                Fechar
               </button>
             </div>
           </div>

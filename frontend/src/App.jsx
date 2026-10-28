@@ -51,12 +51,14 @@ export default function App() {
     }, 4200);
   }, []);
 
-  const highlightPanel = useCallback((elementId) => {
+  const highlightPanel = useCallback((elementId, accent = 'blue') => {
     const el = document.getElementById(elementId);
     if (!el) return;
-    el.classList.add('panel-highlight');
+    const highlightClass = accent === 'purple' ? 'panel-highlight-purple' : 'panel-highlight';
+    el.classList.remove('panel-highlight', 'panel-highlight-purple');
+    el.classList.add(highlightClass);
     setTimeout(() => {
-      el.classList.remove('panel-highlight');
+      el.classList.remove(highlightClass);
     }, 1800);
   }, []);
 
@@ -153,15 +155,8 @@ export default function App() {
 
   const requireLogin = (modalName) => {
     if (currentUser) {
-      if (modalName === 'community') {
-        showToast(
-          'Você está conectada ao AURA. Acesse as conversas entre usuárias.',
-          'success'
-        );
-      } else {
-        setReportRegion(selectedRegionId);
-        setActiveModal(modalName);
-      }
+      setReportRegion(selectedRegionId);
+      setActiveModal(modalName);
     } else {
       setActiveModal('auth');
     }
@@ -179,7 +174,7 @@ export default function App() {
     const el = document.getElementById('apoio');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      highlightPanel('apoio');
+      highlightPanel('apoio', 'purple');
     }
     if (toastMsg) {
       const resolvedType =
@@ -281,7 +276,7 @@ export default function App() {
             <p className="eyebrow">Porto Alegre · prevenção e informação</p>
             <h1>Seu caminho, com mais informação.</h1>
             <p className="hero-copy">
-              Consulte indicadores de percepção das usuárias sobre o território e encontre orientações de apoio para seus deslocamentos.
+              Explore relatos por região e conheça melhor as ruas dos bairros antes de se deslocar.
             </p>
             <div className="hero-actions">
               <button
@@ -362,12 +357,12 @@ export default function App() {
           </div>
         </section>
 
-        {/* Grade Inferior: Apoio & Segurança + Comunidade */}
+        {/* Grade Inferior: Apoio & Segurança + Apoio Mútuo */}
         <SupportAndCommunity
           onScrollToSupport={scrollToSupport}
           onShowToast={showToast}
-          onRequireLogin={requireLogin}
           onOpenPrivacyModal={() => setActiveModal('privacy')}
+          onOpenCommunityModal={() => setActiveModal('community')}
         />
       </main>
 
@@ -386,11 +381,20 @@ export default function App() {
               Canais de apoio
             </a>
             <a
-              href="#privacidade"
+              href="#painelOrientacoes"
               id="linkFooterPrivacy"
               onClick={(e) => {
                 e.preventDefault();
-                setActiveModal('privacy');
+                const el = document.getElementById('painelOrientacoes');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  highlightPanel('painelOrientacoes');
+                  document.getElementById('cardPrivacy')?.focus({ preventScroll: true });
+                }
+                showToast(
+                  'Acesse “Privacidade no AURA” para consultar as informações completas.',
+                  'info'
+                );
               }}
             >
               Privacidade
@@ -414,7 +418,7 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Modais: Área de Acesso, Compartilhar Relato, Como Funciona e Privacidade */}
+      {/* Modais: Área de Acesso, Compartilhar Relato, Como Funciona, Privacidade e Apoio Mútuo */}
       <Modals
         activeModal={activeModal}
         onCloseModal={() => setActiveModal(null)}

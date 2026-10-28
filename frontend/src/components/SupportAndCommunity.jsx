@@ -3,16 +3,16 @@
  * -------------------------------
  * Renderiza a grade inferior da página com duas seções complementares:
  * 1. "Apoio e segurança": cartões interativos com orientações práticas e privacidade.
- * 2. "Fórum & apoio mútuo": espaço de apoio entre usuárias (exige autenticação).
+ * 2. "Apoio mútuo": orientações de acolhimento e confiança com abertura do modal informativo.
  */
 export default function SupportAndCommunity({
   onScrollToSupport,
   onShowToast,
-  onRequireLogin,
   onOpenPrivacyModal,
+  onOpenCommunityModal,
 }) {
   return (
-    <section className="bottomgrid" aria-label="Orientações de segurança e apoio entre usuárias">
+    <section className="bottomgrid" aria-label="Orientações de segurança e apoio mútuo">
       <section className="panel" id="painelOrientacoes">
         <div className="panelhead">
           <div className="panelhead-main">
@@ -64,7 +64,7 @@ export default function SupportAndCommunity({
               )
             }
           >
-            <span className="quick-icon" aria-hidden="true">
+            <span className="quick-icon purple-icon" aria-hidden="true">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -77,7 +77,7 @@ export default function SupportAndCommunity({
               </svg>
             </span>
             <span>
-              <strong>Canais oficiais de apoio</strong>
+              <strong className="purple-title">Canais oficiais de apoio</strong>
               <small>Ligue 180 e emergência policial.</small>
             </span>
           </button>
@@ -142,31 +142,76 @@ export default function SupportAndCommunity({
       <section className="panel community-panel" id="comunidade">
         <div className="panelhead">
           <div className="panelhead-main">
-            <h2>Fórum &amp; apoio mútuo</h2>
-            <p>Troca de informações com respeito e cuidado.</p>
+            <h2>Apoio mútuo</h2>
           </div>
           <span
             className="pill"
             style={{ background: 'var(--purple-soft)', color: 'var(--title-purple)' }}
           >
-            Área com login
+            Orientações
           </span>
         </div>
 
         <p className="community-intro">
-          A área pública apresenta o espaço de apoio entre usuárias. Para participar das conversas, é necessário entrar no AURA.
+          Orientações para oferecer e buscar apoio com respeito e acolhimento.
         </p>
 
         <div className="community-list">
           <article className="community-item">
             <div className="avatar" aria-hidden="true">
-              A
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20.8 8.7c0 5-8.8 10.4-8.8 10.4S3.2 13.7 3.2 8.7A4.7 4.7 0 0 1 12 6.2a4.7 4.7 0 0 1 8.8 2.5Z" />
+              </svg>
             </div>
             <div>
-              <strong>Troca de informações e apoio mútuo</strong>
-              <p>
-                Entre no AURA para participar das conversas entre usuárias, com respeito e cuidado.
-              </p>
+              <strong>Apoiar sem pressionar</strong>
+              <p>Escuta acolhedora, sem julgamentos e empatia.</p>
+            </div>
+          </article>
+
+          <article className="community-item">
+            <div className="avatar" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z" />
+              </svg>
+            </div>
+            <div>
+              <strong>Buscar apoio no próprio ritmo</strong>
+              <p>Encontre apoio no seu tempo, compartilhando apenas o que desejar.</p>
+            </div>
+          </article>
+
+          <article className="community-item">
+            <div className="avatar" aria-hidden="true">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="9" cy="8" r="3" />
+                <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5.5a3 3 0 0 1 0 5.8M18 14a4.5 4.5 0 0 1 3 4.2V20" />
+              </svg>
+            </div>
+            <div>
+              <strong>Construir uma rede de confiança</strong>
+              <p>Apoio, privacidade e acesso a serviços especializados.</p>
             </div>
           </article>
         </div>
@@ -176,9 +221,9 @@ export default function SupportAndCommunity({
             type="button"
             className="btn purple full"
             id="btnCommunityAction"
-            onClick={() => onRequireLogin('community')}
+            onClick={onOpenCommunityModal}
           >
-            Entrar para conversar
+            Ver orientações de apoio
           </button>
         </div>
       </section>
